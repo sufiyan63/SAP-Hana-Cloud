@@ -1,0 +1,324 @@
+<html>
+  <head>
+    <style>
+      .Portal {
+        border-color: lightblue;
+        border-style: solid;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>
+      Optimization Theory
+    </h1>
+    <br/>
+    <ul>
+        <li>Monitoring unfolding
+            <ul>
+                <li>Use Analyze ⇒ Explain plan in SQL console</li>
+            </ul>
+        </li>
+        <li>Transparent Filter
+            <ul>
+                <li>Again used in aggregation node to get accurate results</li>
+                <li>Store A has product hat and sales 2000</li>
+                <li>Store B has product hat and sales 1000</li>
+                <li>If we request for number of unique product from store A and B</li>
+                <li>We get result 2 which is incorrect. The result should be 1</li>
+                <li>Select the Store Column in mapping section and enable Transparent Filter. </li>
+                <li>The result is one which is correct.</li>
+            </ul>
+        </li>
+        <li>CHECK_ANALYTICAL_MODEL
+            <ul>
+                <li>tips to improve the optimization of object</li>
+                <li><b>Procedure with parameter </b> </li>
+                <li>&#39;list&#39;</li>
+                <li>schema name</li>
+                <li>object name</li>
+                <li>out</li>
+                <li>call CHECK_ANALYTICAL_MODEL(&#39;list&#39;,&#39;schema&#39;,&#39;object&#39;,?)</li>
+            </ul>
+        </li>
+        <li>Optimize Join
+            <ul>
+                <li>Optimize Join Columns Option
+                    <ul>
+                        <li>In SAP HANA is a configuration setting used in calculation views to improve performance when joins are executed on specific columns. When this option is enabled for a join column, it provides the SAP HANA engine with additional metadata about the column, such as its usage frequency or distribution. This helps the engine optimize query execution plans.  </li>
+                        <li><b>Steps:</b> </li>
+                        <li>Open Calculation View Editor  </li>
+                        <li>Select Join Node  </li>
+                        <li>Select the join column from one of the tables in the join.</li>
+                        <li>Right-click the column and look for the option <q>Optimize Join Column</q> or a similar setting in the column properties.</li>
+                        <li>By default the joint field like employee_ID, Adress_ID is included in the aggregation even if not requested by the query</li>
+                        <li>When the Optimize Join Columns option is active, pruning of join columns between two data sources, A and B, occurs when all four following conditions are met:</li>
+                        <li>The cardinality on B side (the side of the join partner from which no column is requested) is ..1</li>
+                        <li>The join column from A is NOT requested by the query.</li>
+                        <li>Only columns from one join partner, A, are requested.</li>
+                        <li>The join type is Referential, Outer or Text</li>
+                        <li>No measures at all are requested or only measure with count distinct aggregation</li>
+                    </ul>
+                </li>
+                <li>Greedy Join Pruning
+                    <ul>
+                        <li><img src="https://remnote-user-data.s3.amazonaws.com/pDTYvb3nmAX5b62QCwkzR3F6PFCt1omjDQAQ88jnaiR68rjUM6YyX_jwlJrBU_uVwbmqaP5f64f5wxvFejFb5Wwy27l8uLL-qUe-55dd3rGYt-aZbHvzzi_qWyQJZXsc.png" width="351" height="170.15235457063713"/></li>
+                        <li>If you want to prune the joints at any cost irrespective of the joint type and cardinality But force Pruning by left, right and both</li>
+                        <li>It allows the SQL optimizer to prune a joined source if it is not queried at all (no column requested), regardless of the cardinalities and join type settings.  </li>
+                        <li>When greedy pruning is enabled, it does not prevent other join pruning mechanisms. Therefore, even if a condition is not met for greedy join pruning (for example, the <i>Greedy Pruning</i> is <i>Left</i> but you request columns from the left table of the join), join pruning could still happen because the cardinalities, join type and so on, allow it.  </li>
+                        <li>The results might be affected you need to thoroughly test it</li>
+                        <li>Select the join link</li>
+                        <li>Select the join type ⇒ inner</li>
+                        <li>Select cardinality </li>
+                        <li>Enable Greedy pruning ⇒ both sides</li>
+                        <li><b>Another way which takes high priority</b> </li>
+                        <li>Select the semantics node</li>
+                        <li>Select view properties</li>
+                        <li>Select advanced tab</li>
+                        <li>Select Execution hint</li>
+                        <li>Greedy Pruning both sides</li>
+                        <li><img src="https://remnote-user-data.s3.amazonaws.com/tjqR6HhvZG0knfLT0gcatFW_M9CKHPsOeIM_7dG-v6gaGYVrhFSKxJ2pACLdQ_lLd22vMaKRHCp2Wh2VzJx8u_OnwxRwwkkuUGI_I-wdnAENE9ZMkbsR7x2AvDCftN0g.png" width="479" height="231.17382413087935"/></li>
+                        <li><a isInlineLink="true" href="https://learning.sap.com/learning-journeys/develop-data-models-with-sap-hana-cloud/optimizing-joins_c2a47077-c573-4ca3-95e2-be564528354d">Greedy Pruning at Different Levels</a>
+</li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+        <li>Parallelization
+            <ul>
+                <li>SAP Hana Cloud optimizes performance through automatic parallelization</li>
+                <li><b>Forced Parallelization</b> </li>
+                <li>Use &quot;Partition local Execution&quot; flag in calculation views select the table node in mapping tab</li>
+                <li>Data Source must be a table and not a view</li>
+                <li>Only one parallelization block per query</li>
+                <li>Start with table defined node - Set the flag for Partition local Execution</li>
+                <li>Perform aggregation and calculation in the middle node</li>
+                <li>End with Union node, Set the flag for Partition local Execution, Indicating termination of parallelism, Note Union node should have only one data source</li>
+            </ul>
+        </li>
+        <li>Performance analysis
+            <ul>
+                <li>Button in Graphical calculation view editor</li>
+                <li>In each node you will get performance analysis tab</li>
+                <li>Identify settings leading to poor performance during calculation view development</li>
+                <li>React to design time warnings and information to optimise performance</li>
+                <li>Access detailed information on performance analysis tab for all nodes except Symantec node</li>
+                <li>Information Provided
+                    <ul>
+                        <li>Table types (row or column)</li>
+                        <li>Joint types (inner or outer) and join cardinality</li>
+                        <li>Table partitioning details</li>
+                        <li>Clear warnings for very large table</li>
+                        <li>missing or misaligned cardinalities</li>
+                        <li>Consider partitioning and applying filters for large tables to process only necessary data</li>
+                        <li></li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+        <li>Plan and SQL Analyzer
+            <ul>
+                <li>Provides brief info about operators and related information</li>
+                <li>Analyse performance of SQL queries, including those generated by calculation views</li>
+                <li>gain insights into query execution type, step duration, bottlenecks, parallelization, and processing engines</li>
+                <li>Provide views to analyse SQL queries. Drill down into query execution, timeline and table usage</li>
+                <li>Requires installation of SAP Hana Performance Tools Extension in sap business application studio</li>
+                <li>Select the .hdbcalculationview file and open SQL editor</li>
+                <li>Select Hana SQL analyzer tab in the left pane</li>
+                <li>Click on Analyze and select <b>Generate SQL Analyzer file</b> </li>
+                <li>The generated file is available in the main Hana instance</li>
+                <li>SAP Hana cloud central ⇒ Database explorer ⇒ DBADMIN</li>
+                <li>Expand Database Diagnostic Files ⇒ Expand host ⇒ other ⇒ download the generated file</li>
+                <li>Import that in BAS ⇒ open in SQL analyzer</li>
+            </ul>
+        </li>
+        <li>Snapshots
+            <ul>
+                <li>Store calculation view result for history or performance reason</li>
+                <li>Take snapshots of data at different point of time</li>
+                <li>Semantics ⇒ View properties ⇒ Snapshots</li>
+                <li>New query name ⇒ create snapshot after deployment (will create snapshot table) ⇒ keep snapshot during redeployment </li>
+                <li>Deploy the snapshot view individually to generate the snapshot table</li>
+                <li>Deploy the calculation view to generate the snapshot table</li>
+                <li>You can also find the procedures generated for the snapshot table (Insert, Truncate, drop, delete)</li>
+                <li>execute snapshot manually or scheduled for regular updates</li>
+                <li>Query snapshot table for historical data while using calculation view for real time data</li>
+            </ul>
+        </li>
+        <li>Best Practices for Modeling
+            <ul>
+                <li>Always maintain accurate cardinality</li>
+                <li>Try to reduce the number of join columns</li>
+                <li>Avoid joining on calculated columns</li>
+                <li>Avoid type conversions at runtime</li>
+                <li>Avoid mixing serious CDS views with calculation views, because both are performed on the different engine</li>
+                <li>Break down large models into individual calculation views so that they are easier to understand and also allow you to define reusable components, thus avoiding redundancy and duplicated maintenance as a consequence.</li>
+                <li>For performance issues, we generally recommend that you create dedicated calculation views or tables to generate the list of help values for variables and input parameters.</li>
+                <li>Setting up and maintaining replication is possible by executing SQL statements in the SQL Console. But this approach means that the objects that are created in the database will be owned by your user ID and this can lead to problems when others need to take over the objects. Also, transportation of the database objects isn’t possible.</li>
+                <li>Best practice is to develop the objects using source files and then build/deploy to generate the database artifacts in an HDI container.</li>
+            </ul>
+        </li>
+        <li>Column Pruning
+            <ul>
+                <li>Do not map columns that are not needed</li>
+                <li>Avoid adding too many columns which can lead to large granular data sets when only aggregated data is needed</li>
+            </ul>
+        </li>
+        <li>Switch Calculation View Expressions to SQL
+            <ul>
+                <li>For SAP HANA on-premise, it is possible to write expression using either plain SQL or the native HANA language called column engine language. SAP recommends that you only use SQL and not column engine language to ensure best performance (Column Engine language limits query unfolding).  </li>
+                <li>When you build calculation view expressions on SAP HANA Cloud, you can only choose SQL expression language. Column engine language is not available in SAP HANA Cloud.  </li>
+                <li>Calculation views that were imported to SAP HANA Cloud from SAP HANA on-premise and include column engine language expressions will still run, but you should change the expression language to SQL from the column engine, to achieve better performance. When you select SQL language, the language selector is then grayed out so that you cannot return to Column Engine language.</li>
+                <li>You should be able to recreate column engine expressions to plain SQL. For example, the concatenate operator + is replaced with the plain SQL operator || or you can use the CASE keyword instead of If...Then.</li>
+                <li><img src="https://remnote-user-data.s3.amazonaws.com/8riKPlsybmjVNIY2eD2-rolmP6dp1PPYUryuArOY9Q67GC6AWE59JZXfIG08PZs4ZiljPJSjrVKFplK29xyhoOCyfKbYcOH8BCoGhP90pUNpU-ZQpcGlm8YkmEYslVer.png" width="479" height="226.27607361963192"/></li>
+            </ul>
+        </li>
+        <li>Optimal Aggregations
+            <ul>
+                <li>Always reduce the data set by introducing aggregations early in the modelling stack.</li>
+                <li>If you consume a calculation view that produces attributes, do not change them to measures and vice versa.</li>
+                <li>Choose a cube with star join to build dimensional OLAP models. Do not try to create OLPA models using standard join nodes which creates a relational model. These may not perform as well.</li>
+            </ul>
+        </li>
+        <li>Performance Analysis
+            <ul>
+                <li>You switch your calculation view to Performance Analysis mode by pressing the button that resembles a speedometer in the toolbar. When you do this, the Performance Analysis tab appears for all nodes except the semantics node. Choose this tab to view detailed information about your calculation view, in particular the settings and values that can have a big impact on performance.</li>
+                <li>Examples of the information presented on the Performance Analysis mode tab include the following:</li>
+                <li>The type of tables used (row or column)</li>
+                <li>Join types used (inner, outer, and so on)</li>
+                <li>Join cardinality of data sources selected (n:m and so on)</li>
+                <li>Whether tables are partitioned, and also how the partitions are defined, and how many records each partition contains</li>
+                <li>The size of tables with clear warnings highlighting the very large tables</li>
+                <li>Missing cardinalities or cardinalities that do not align with the current data set</li>
+                <li>Joins based on calculated columns</li>
+                <li>Restricted columns based on calculated columns</li>
+                <li>This information enables you to make good decisions that supports high performance. For example, if you observe that a table you are consuming is extremely large, you might want to think about adding some partitions and then apply filters so that you process only the partitions that contain data you need.</li>
+            </ul>
+        </li>
+        <li>Controlling Parallelization in a Data Flow
+            <ul>
+                <li>SAP HANA Cloud always attempts to automatically apply parallelization to queries in order to optimize performance</li>
+                <li>Within a calculation view, it is possible to force parallelization of data processing by setting a flag Partition Local Execution to mark the start and also the end of the section of a data flow where parallelization is required. The reason you do this is to improve the performance of a calculation view by generating multiple processing threads at specific positions in the data flow where performance bottlenecks can occur.</li>
+                <li>The parallelization block begins with a calculation view node that is able to define a table as a data source. It is not possible to use any other type of data source such as a function or a view.  </li>
+                <li>In the Properties of the chosen start node, a flag Partition Local Execution is set to signal that multiple threads should be generated from this point onwards. It is possible to define a source column as a partitioning value. This means that a partition is created for each distinct value of the selected column. For example, if the column chosen was COUNTRY, then a processing thread is created for each country. Of course, it makes sense to look for partitioning columns where the data can be evenly distributed. The partitioning column is optional. If it is not selected, then the partitioning defined for the table is used.</li>
+                <li>To end the parallelization block, you use a union node. However, unlike a regular union node that would always have at least two data sources, a union used to terminate the parallel processing block is fed only from one data source. The union node combines the multiple generated threads but the multiple inputs are not visible in the graphical editor and so the union node appears to have only one source from the node below.</li>
+                <li>In the Properties of the union node, a flag Partition Local Execution is set to signal the ending of the parallelization block.</li>
+                <li>Only one parallelization block can be defined per query. This means that you cannot stop and the start another block either in the same calculation view or across calculation views in the complete stack. </li>
+                <li>You cannot nest parallelization blocks, for example, start a parallelization block then start another one inside the original parallelization block.  </li>
+                <li>It is possible to create multiple start nodes within a single parallelization block by choosing different partitioning columns for each start node. If you create multiple start nodes, then all threads that were generated are combined in a single ending union node.</li>
+                <li>To check the partitioning of the data, you can define a calculated column within the parallelization block with the simple column engine expression partitionid(). In the resulting data set, you will then see a partition number generated for each processing thread.  </li>
+            </ul>
+        </li>
+        <li>Table Partitioning
+            <ul>
+                <li>it is also possible to subdivide the rows of column tables into separate blocks of data.</li>
+                <li>Partitioning only applies to column store tables and not row store tables. This is why it is recommended that you define tables as a column store that will be used for querying large data sets. Tables as a column store that will be used for querying large data sets.</li>
+                <li>Generating partitions is usually the responsibility of the SAP HANA Cloud administrator. There are many decisions to be made relating to partitions including the type of partition. For example, hash, round robin, or range. Partitions can also include sub-partitions. The administrator uses monitoring tools to observe the performance of partitions and makes adjustments. What the modeler will need to do is to provide the information relating to the use of the data - for example, how queries will access the data so that the partitions can be defined optimally.</li>
+            </ul>
+        </li>
+        <li>Caching View
+            <ul>
+                <li>Reduce system load and speedup query execution by caching complex calculation view results</li>
+                <li>Decreased CPU and memory consumption</li>
+                <li>Applied to highly processed and reduced data example aggregations and filtering</li>
+                <li>Caching shouldn&#39;t be applied to raw data but to data that has been highly processed and reduced through aggregations and filtering. In practice, this means applying caching to the top-most nodes of a calculation view.</li>
+                <li>Cache can only be used for calculation views that don&#39;t check for analytic privileges. This means analytic privileges should be defined on the top-most view only, in a calculation view stack. The optimal design would be to define the cache setting at the highest calculation view possible in the stack, but not at the very top where analytic privileges are checked. This means that the user privileges are always checked against the cached data, if the cache is useable.</li>
+                <li>Firstly, calculation view caching can be defined at the column level. This means queries that use only a sub-set of the cached columns can be served by the cache. It&#39;s recommended to cache only the columns that are frequently requested in order to reduce memory consumption and speed up cache refresh.</li>
+                <li>If you don&#39;t specify any columns in the cache settings, then all columns are cached.</li>
+                <li>The cache size can be further reduced by defining filters in the cache settings. Queries that use either exactly the cache filters, or a subset of the filters, are served by the cache. Cache is only used if the query filter matches exactly the filter that is defined for the cache, or reduces the data further.</li>
+                <li>It&#39;s currently not possible to specify that cache should be invalidated if new data is loaded to the underlying tables. This feature is expected to come later. For now, we just have a time-based expiry (in minutes).</li>
+                <li><b>Semantics ⇒ Static cache</b> </li>
+                <li>Firstly, the basic setting Enable Cache must be set in the calculation view to be cached.</li>
+                <li>Then, the query must be able to be fully-unfolded. This means that the entire query must be fully translatable into a plain SQL statement and not require the calculation of interim results. You can use the Explain Plan feature of the SQL Analyzer to check if unfolding can occur.</li>
+                <li>There must be no calculations that depend on a specific level of calculated granularity as the cache is stored at the level of granularity requested by the first query. This may not align to the aggregation level required by subsequent queries and could cause incorrect results.</li>
+                <li>Hint is added to your SQL Query:</li>
+                <li>SELECT ...WITH HINT (RESULT_CACHE)</li>
+                <li><b>A database hint is used in the top-most view, which consumes to-be-cached view</b> </li>
+                <li>View A: A complex calculation view that processes raw data.</li>
+                <li>View B: Another calculation view that aggregates and filters data from View A.</li>
+                <li>View C: The top-most view that uses the results from View B.</li>
+                <li>Enable caching for View B to store its results.</li>
+                <li>Use a database hint in View C to utilize the cached results of View B.</li>
+                <li><b>Configuration parameter is set:</b> </li>
+                <li>indexserver.ini -&gt; [result_cache] -&gt; enabled</li>
+            </ul>
+        </li>
+        <li>Calculation View Snapshots
+            <ul>
+                <li>To store historical values. Or you could need performance but not on real-time data, just on a latest snapshot of the system taken in the morning, for example.</li>
+                <li>First, you need to deploy your calculation view to generate the snapshot table.</li>
+                <li>Procedures are also generated to truncate the snapshot table or to trigger insertion of data.</li>
+                <li>You can execute the snapshot manually or schedule it to get new data regularly.</li>
+                <li>You can then query the snapshot table to get historical data.</li>
+                <li>You can always continue using the calculation view as usual to get real-time data.</li>
+                <li><b>Steps</b></li>
+                <li>Open your calculation view</li>
+                <li>Go to the view properties tab and select the snapshot tab</li>
+                <li>Add a new query</li>
+                <li>Define the SELECT statement for the query</li>
+                <li>Give me a name to your query</li>
+                <li>Decide if you want to provision the table or deployment</li>
+                <li>Decided which mode you want the procedures to be created in</li>
+                <li>Decide if you want an interface view</li>
+                <li><b>INSERT</b> </li>
+                <li>The INSERT procedure can be used at any time to execute the query and store the results into the snapshot table.</li>
+                <li>If you call the procedure to insert data twice, without truncating data, you&#39;ll have duplicates. So first call TRUNCATE Procedure and then execute INSERT</li>
+                <li>If you don&#39;t want to delete data between two deployments, you can use the Keep Snapshot During Re-deployment option.</li>
+                <li><img src="https://remnote-user-data.s3.amazonaws.com/ZErhzV1jcQgHyEBAJkj__DQj3dYHFV6Q_WXD-B6HagSm457-eQDll-smDYJpoY_5GWoYAALtIhuFAEE9ZuncRYPrBQ4ZvCg3_zE_8R7IWSoA3h51TMOQSteEuGtvJo-y.png" width="878" height="541"/></li>
+                <li>Interface View
+                    <ul>
+                        <li>Additional calculation view is generated which is a union of snapshot and original calculation view</li>
+                        <li>Additional Column called &#39;SOURCE&#39; is generated in the Interface View which has constant values &#39;BASE&#39; and &#39;SNAPSHOT&#39;</li>
+                        <li>Additional parameter called &#39;I_SOURCE&#39; is added to the interface view which is a static list of filter values</li>
+                        <li>Additional Filter expression is added to filter the source</li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+        <li>MDS Cubes for a Calculation View
+            <ul>
+                <li>store pre-processed data in a format that can serve all these complex drill-down queries and allows to quickly answer these most frequently required drilldown situations</li>
+                <li><img src="https://remnote-user-data.s3.amazonaws.com/9iA31hKBKsZplyDDkNbS3uaCqSWNEaR0ck33V2sW7wDN-m8hYg-Wxyzz2WxfKtK-GVcC-oMy5zuV7iKVM5p1jdBpYlGMYrktMUgQgefRU_0XfCcATq4xTE7BI6-5Im_E.png" width="479" height="263.49897750511246"/></li>
+                <li>You can define multiple MDS Cubes for the same calculation view. Deployment of the calculation view builds the view and generates all MDS cubes that are defined for it, initially without data.  </li>
+                <li>the data is not stored as a flat datastructure, but in a multidimensional, star-join-like structure that is optimized for tailored data access.</li>
+                <li>When the source data changes after populating the MDS cube, the loaded data is not automatically updated.</li>
+                <li>Analytic privilege settings of a calculation view are applied automatically also to all MDS Cubes that apply to within the calculation view  </li>
+                <li>An API is available to manage and maintain MDS Cubes. This API implements an extended CRUD (Create, Read, Update, Delete) service, which can be used by both applications using MDS Cube and directly by the customer.  </li>
+                <li>CALL MANAGE_MDS_CUBE(&#39;
+{
+   &quot;Cube&quot;: {
+      &quot;Command&quot;: &quot;Reload&quot;,
+      &quot;Target&quot;: {
+         &quot;DataSource&quot;: {
+            &quot;SchemaName&quot;: &quot;LIQUID_HORIZON&quot;,
+            &quot;ObjectName&quot;: &quot;model.mdscube::LIQUID_HORIZON_LTD/mdscube/LIQUID_HORIZON_MDS_CUBE&quot;
+         }
+      }
+}&#39;,?);</li>
+                <li>For monitoring, check the _SYS_EPM.MDS_METADATA table  </li>
+                <li><b>Limitations</b> </li>
+                <li>MDS Cubes cannot contain calculated measures. Instead, you can generate the calculation in SAC.</li>
+                <li>MDS Cubes support variables, but no input parameters</li>
+                <li>Joins with two or more join condition fields are not supported.</li>
+                <li>VARBINARY columns can not be used.</li>
+                <li><b>Authorizations</b> </li>
+                <li>To load or delete an MDS cube, you need the EXECUTE privilege for procedure MANAGE_MDS_CUBE. You can grant it as shown in the code snippet:  </li>
+                <li>GRANT EXECUTE ON MANAGE_MDS_CUBE TO &lt;DB_USER&gt;;</li>
+                <li>Additionally, you need privilege CREATE ANY for the HDI schema in which the Calculation view of the MDS Cube resides. Moreover, you must have SELECT privileges for the data source of the MDS Cube.  </li>
+            </ul>
+        </li>
+        <li>Query Unfolding and folding
+            <ul>
+                <li>Query unfolding is when SAP HANA ignores the pre-designed structure of the calculation view and then runs the query directly on those raw tables instead of using the calculation view’s built-in logic.  </li>
+                <li>A benefit of unfolding to SQL is that only the SQL engine is needed and no other SAP HANA engine is called, such as the Calculation Engine or other SAP HANA Cloud engines such as Spatial or Graph</li>
+                <li><img src="https://remnote-user-data.s3.amazonaws.com/zwPgaxQaznqQH2ag_Jq_xjsxOFJtzp_Sk3hJW-3fg2lD7FpL5XIbTwcZ6taBrO6SpeKVEFvKS6kcMtqjerI5cReUFVJmiRcMDo9_xIEllf-hGg5GHFYaS2LQ9c0tr7B7.png" width="479" height="176.31901840490798"/></li>
+                <li>If a <i>column view</i> is used as a data source instead of a table, then you know this is not an unfolded query as the result has been materialized as an interim view and not read directly from a table. A completely unfolded query only accesses tables.  </li>
+                <li>The calculation view is designed to show a summary, like “how many activities each student does.” But suppose you run a query asking for something very specific, like “all students with a particular activity on a specific date,” and the calculation view doesn’t have that info pre-organized. SAP HANA might <b>unfold</b> the query. It goes straight to the raw <b>Students</b> and <b>Enrichment</b> tables, joins them (e.g., matching STUDENTS_ID = STU_ID), and filters the data step by step.  </li>
+                <li>Query folding is when SAP HANA uses its pre-designed, optimized structure to get the results. It doesn’t break things down to the raw tables—it trusts the “recipe” already built into the view.  </li>
+                <li>Using the same calculation view with <b>Students</b> and <b>Enrichment</b> tables, let’s say you want to know “how many activities each student does.” The calculation view might already have this summary pre-calculated or optimized. When you run this query, SAP HANA <b>folds</b> it—meaning it stays within the calculation view (e.g., one called exampleNoKAnonymity) and quickly gives you the answer without touching the raw tables.  </li>
+            </ul>
+        </li>
+        <li></li>
+
+    </ul>
+    </body>
+</html>

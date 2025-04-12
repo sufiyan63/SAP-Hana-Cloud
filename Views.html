@@ -1,0 +1,348 @@
+<html>
+  <head>
+    <style>
+      .Portal {
+        border-color: lightblue;
+        border-style: solid;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>
+      Views
+    </h1>
+    <br/>
+    <ul>
+        <li>Calculation views
+            <ul>
+                <li>Not materialized</li>
+                <li>SQL expressions can be used</li>
+                <li>Calculation views can adapt its Behavior to the list of columns that are projected for example the granularity of the rank node can be determined dynamically depending on whether the query results by country or by country and customer</li>
+                <li>Calculation views are read only, and cannot change data in the SAP HANA Cloud database.</li>
+                <li><b>Supported Tables types in Calculation view</b> </li>
+                <li><a isRemReference="true" href="Views/Row%20Tables.html?isPin=false">Row Tables</a></li>
+                <li><a isRemReference="true" href="Views/Column%20Tables.html?isPin=false">Column Tables</a></li>
+                <li><a isRemReference="true" href="Views/Virtual%20Tables.html?isPin=false">Virtual Tables</a></li>
+                <li><a isRemReference="true" href="Views/Calculation%20views.html?isPin=false">Calculation views</a> </li>
+                <li><a isRemReference="true" href="Views/SQL%20Views.html?isPin=false">SQL Views</a></li>
+                <li><a isRemReference="true" href="Views/Table%20functions.html?isPin=false">Table functions</a></li>
+                <li>Calculation Engine
+                    <ul>
+                        <li><img src="https://remnote-user-data.s3.amazonaws.com/DsAqY8s_WwZKheHQJVd0WK_mbadotP-u9mnNJvl9Fa2vJMZDvLxKJ6kWdNs3Dxzc8dRZAZwJee08S_VQpSaoThmx8Ffppi14uijz-EjA95FhGyf5TpUTXvrqIvmERs4N.png" width="479" height="190.03271983640082"/></li>
+                        <li>The calculation engine pre-optimizes runtime model after applying pruning&#39;s such as <a isRemReference="true" href="../SAP%20HANA/Joins/Dynamic%20Join.html?isPin=false">Dynamic Join</a>,<a isRemReference="true" href="../SAP%20HANA/Nodes/Union%20node/Pruning%20configuration%20table.html?isPin=false">Pruning configuration table</a>, <a isRemReference="true" href="../SAP%20HANA/Optimization%20Theory/Column%20Pruning.html?isPin=false">Column Pruning</a> before they are worked on by the SQL engine.  </li>
+                        <li>A calculation view is instantiated at run-time when a query is executed. </li>
+                        <li>After this, the SQL optimizer applies further optimizes and determines the query execution plan - for example, it determines the optimal sequence of operations, and also those steps that could be run in parallel.  </li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+        <li>Dimension View
+            <ul>
+                <li>Projection node is default second node</li>
+                <li>Dimensions are re-useable objects. When they have been created, they can are shared by developers and used to develop star schemas.  </li>
+                <li><b>Processing Engine:</b> Join Engine</li>
+                <li>Dimension calculation views are only built from attributes. They do not include measures. Every column from the data source is treated as an attribute. This means that any numerical column in the source record, such as price or salary, is treated as an attribute and not a measure. </li>
+                <li>When you query a dimension calculation view, a complete list of every single individual value in the source is produced in the output. Even the numerical values such as quantities are listed individually and not aggregated. If you want to sum values then you need a cube calculation view where it is possible to define measures.</li>
+                <li>If you would like to produce only a <i>distinct</i> list of attribute values, you can specify aggregation on any column. Then each unique value appears only once in the result.  </li>
+            </ul>
+        </li>
+        <li>Cube View
+            <ul>
+                <li>Aggregation View is default node</li>
+                <li>When you would like to create a calculation view that includes measures, you use a calculation view of the following type: cube.  </li>
+                <li><b>Processing Engine:</b> OLAP Engine  </li>
+                <li>By default, all the measures in this type of calculation view will always be aggregated by the attributes requested by the query. Consequently, even though the calculation view may be able to provide many attributes, the measures are always automatically aggregated only by the attributes that were requested by the query.  </li>
+                <li>For example, your cube calculation view provides the measure: revenue, and the attributes: country and city. The query requests only country, and so revenue is summed by country and not by city. If the next query requests the measure: revenue, and the attributes: country and city, then the revenue would be summed by city and also country. This means that you will have two levels of aggregation.</li>
+                <li>This type of calculation view is optimized for ad-hoc analysis, where unpredictable  <a isRemReference="true" href="../SAP%20HANA/Concepts/Slice-and-Dice.html?isPin=false">Slice-and-Dice</a> is required over the measures by any combination of attributes within the model.</li>
+            </ul>
+        </li>
+        <li>Time Dimension View
+            <ul>
+                <li>You use views to automatically generate various date-related attributes  like year, month, day, week, days in a week from a base date <i>dd-mm-yy</i> in customer table. All that is needed is the base date in the source record. From that we can derive all possible time attributes automatically.  </li>
+                <li><b>Granularity</b> </li>
+                <li>Year ⇒ _SYS _BI:M_TIME_DIMENSION_YEAR</li>
+                <li>Month ⇒ _SYS _BI:M_TIME_DIMENSION_MONTH</li>
+                <li>Week ⇒ _SYS _BI:M_TIME_DIMENSION_WEEK</li>
+                <li>Second, minute, hour, day ⇒ _SYS _BI:M_TIME_DIMENSION</li>
+                <li>The tables M_TIME_DIMENSION is precreated and then you join</li>
+                <li>Create New Time Dimension HANA DB Artifact
+                    <ul>
+                        <li>Data category ⇒ DIMENSION</li>
+                        <li>Dimension type ⇒ TIME</li>
+                        <li>Calendar ⇒ <a isRemReference="true" href="Views/Time%20Dimension%20View/Gregorian%20Calendar.html?isPin=false">Gregorian Calendar</a></li>
+                        <li>granularity ⇒ Week/Date</li>
+                        <li>time dimension artifact ⇒ schema:m_time_dimension_week/_SYS_BI:M_TIME_DIMENSION</li>
+                    </ul>
+                </li>
+                <li>Gregorian Calendar
+                    <ul>
+                        <li>is the standard international calendar used for civil purposes.</li>
+                        <li>It consists of <b>12 months</b> and <b>365 days (or 366 days in a leap year)</b>.  </li>
+                        <li>It starts on <b>January 1st</b> and ends on <b>December 31st</b>.  </li>
+                        <li>SYS.update_time_dimension
+                            <ul>
+                                <li>You need to ensure T005T and T005U are available and filled</li>
+                                <li>This procedure allows you to generate time data using SQL statements</li>
+                                <li>For example, you can choose to generate records between 2020 - 2024. </li>
+                                <li>You can regenerate the data at any time to keep the table up-to-date. The generated table is used as the data source to the time-based dimension calculation view</li>
+                                <li>granularity ⇒ &#39;WEEK&#39;</li>
+                                <li>START_YEAR ⇒ 1999</li>
+                                <li>END_YEAR ⇒ 2024</li>
+                                <li>FIRST_DAY_OK_WEEK ⇒ 1</li>
+                                <li>TARGET_SCHEMA_NAME ⇒ &#39;&#39; // You can give the schema name if you don&#39;t give schema name then default schema is _SYS _BI</li>
+                                <li>TARGTE_TABLE_NAME ⇒ &#39;&#39; //This will create table in the target schema based on granularity if not specified then default table m_time_dimension_week in target schema or _SYS _BI</li>
+                                <li>RECORD_COUNT ⇒ ?</li>
+                            </ul>
+                        </li>
+                    </ul>
+                </li>
+                <li>Fiscal Calendar
+                    <ul>
+                        <li>Also called a financial year or accounting year) is used by governments,  </li>
+                        <li>the fiscal year <b>does not always start on January 1st</b>. It varies by country and organization.  </li>
+                        <li>SYS.update_fiscal_calendar
+                            <ul>
+                                <li>You need to ensure T009 and T009B are available and filled</li>
+                                <li>Create your own table having structure _SYS _BI.M_FISCAL_CALENDAR </li>
+                            </ul>
+                        </li>
+                    </ul>
+                </li>
+                <li>When you create a time-based dimension calculation view, a table is also generated that is automatically filled with records that represent the data attributes for a range of dates that you specify. For example, you can choose to generate records between 2020 - 2024. You can regenerate the data at any time to keep the table up-to-date. The generated time table is used as the data source to the time-based dimension calculation view. You then consume the time-based dimension calculation view in your cube calculation view.  </li>
+                <li><img src="https://remnote-user-data.s3.amazonaws.com/xdwSx2anJ_AzmzrMbrNJT5OlnCw1WNkRgfqtLa0drbG6r1m4v2ExvvwRQOmNQou4pZxGanV0Gu9j39BXALq13nw02YAQAPGyMHo29yGGIHpUlYEv5xgk4KUfPUDzSNIo.png" width="306" height="576"/></li>
+            </ul>
+        </li>
+        <li>Hierarchies
+            <ul>
+                <li>A hierarchy is a structured representation of an organization, a list of products, the time dimension, and so on, using levels.</li>
+                <li>It is often used to provide the easy navigation of a large data set in a drill-down. </li>
+                <li>Is available only in Symantics node</li>
+                <li><img src="https://remnote-user-data.s3.amazonaws.com/Q38kfsLKuH6885VxwuAHrBQIEDijYT8OWF14OTDVZDZWtIc4AMtt4XWfvZ8DFDjz18ieverGTFf4Idn_-OPwGDPtUA82jS7lGoOOljVkHTQpEmo3qlC2iKsJAqcJorsV.png" width="479" height="230.19427402862988"/></li>
+                <li>Level Hierarchy
+                    <ul>
+                        <li>A level hierarchy requires each level to be stored in a separate column. Rows represent leaf nodes.</li>
+                        <li>Heterogeneous fields (possibly with different data types) are combined in a hierarchy.</li>
+                        <li>A level hierarchy is defined by choosing columns from a source data set and organizing them in a sequence that provides a drill-down path. Each level is based on a separate column in the source data.  </li>
+                        <li>In the Semantics node, select the Hierarchies tab and click the &#39;+&#39; button in the Hierarchy pane.  </li>
+                        <li>Add the columns to the hierarchy in the correct level order from top to bottom, with the lowest granularity at the lowest level of the hierarchy.</li>
+                        <li>Additionally, you can define an ascending or descending sort direction per level.</li>
+                        <li><img src="https://remnote-user-data.s3.amazonaws.com/IeZf2OrC9OI1jcGtiwCGV_vDIM-Q6wYIogS7mGwsUnnfdke-69EvSRJ-NvNEaRCdT5oGN-BOAVh2LvkF2ORNAAi6g78WuweZbps778CfxNVV3orqyET7aWlVFhLpcDAx.png" width="459" height="186.92750533049042"/></li>
+                        <li><b>Node styles are used to define the output format of a node ID.</b> </li>
+                        <li>Using a fiscal hierarchy example, the following table demonstrates the different node styles:  </li>
+                        <li>Level Style  | Output | Example</li>
+                        <li>Level Name | Level and node name | MONTH.JAN or COUNTRY.GERMANY</li>
+                        <li>Name Only |Node name only | JAN or Hamburg</li>
+                        <li>Name Path | Node name and its ancestors | FISCAL_2015.QUARTER_1.JAN or EUROPE.GERMANY.Hamburg</li>
+                        <li><b>Level Types</b> </li>
+                        <li>A level type specifies the semantics for the level attributes. For example, the level type TIMEMONTHS indicates that the attributes are months such as January, February, or March.</li>
+                        <li>The level type REGULAR indicates that the level does not require any special formatting.</li>
+                        <li><i>Order By ⇒</i> dropdown list, an attribute can be selected for ordering the hierarchy members in the order specified in the <i>Sort Direction</i> column.  </li>
+                    </ul>
+                </li>
+                <li>Parent and Child
+                    <ul>
+                        <li>A parent-child hierarchy requires columns of the same data type for parents and children. Rows represent each node.</li>
+                        <li>Parent-child hierarchy columns usually contain IDs or key fields instead of plain text.</li>
+                        <li>You can define multiple parent-child pairs to support the compound node IDs - for example:</li>
+                        <li>CostCenter and ParentCostCenter</li>
+                        <li>ControllingArea and ParentControllingArea</li>
+                        <li>Here’s an example of a compound parent-child definition to uniquely identify cost centers:</li>
+                        <li>CostCenter: CC1001, CC1002, CC1003</li>
+                        <li>ParentCostCenter: CC1000, CC1000, CC1001</li>
+                        <li>ControllingArea: CA01, CA01, CA02</li>
+                        <li>ParentControllingArea: CA00, CA00, CA01</li>
+                        <li>In this example:</li>
+                        <li>CostCenter CC1001 is a child of ParentCostCenter CC1000 within ControllingArea CA01.</li>
+                        <li>CostCenter CC1002 is also a child of ParentCostCenter CC1000 within ControllingArea CA01.</li>
+                        <li>CostCenter CC1003 is a child of ParentCostCenter CC1001 within ControllingArea CA02.</li>
+                        <li>Advanced Properties of a Parent-Child Hierarchy
+                            <ul>
+                                <li><img src="https://remnote-user-data.s3.amazonaws.com/37H9XezLFktUz0KKLQfxavRzZi_4H_v5S2b0Kq1r4HqIFCFkmy0fF0glDZVPF37LNeKrNuHbuzflszjBbao8rgLK818ymn6smXmQRFkMHeB72at8C9kT140ygHSwyjsD.png" width="455" height="188.8494623655914"/></li>
+                                <li><b>Aggregate All Nodes</b> </li>
+                                <li>defines whether the values of intermediate nodes of the hierarchy should be aggregated to the total value of the hierarchy’s root node. If you are sure that there is no data posted on aggregate nodes, you should set the option to False. The engine then executes the hierarchy faster.</li>
+                                <li>Root Node: Company
+                                    <ul>
+                                        <li>Intermediate Node: Department A
+                                            <ul>
+                                                <li>Leaf Node: Cost Center 1</li>
+                                                <li>Leaf Node: Cost Center 2</li>
+                                            </ul>
+                                        </li>
+                                        <li>Intermediate Node: Department B
+                                            <ul>
+                                                <li>Leaf Node: Cost Center 3</li>
+                                                <li>Leaf Node: Cost Center 4</li>
+                                            </ul>
+                                        </li>
+                                    </ul>
+                                </li>
+                                <li>Cost Center 1: $10,000</li>
+                                <li>Cost Center 2: $15,000</li>
+                                <li>Cost Center 3: $20,000</li>
+                                <li>Cost Center 4: $25,000</li>
+                                <li>Aggregation:</li>
+                                <li>Department A: $10,000 (Cost Center 1) + $15,000 (Cost Center 2) = $25,000</li>
+                                <li>Department B: $20,000 (Cost Center 3) + $25,000 (Cost Center 4) = $45,000</li>
+                                <li>Company: $25,000 (Department A) + $45,000 (Department B) = $70,000</li>
+                                <li><b>Default Member</b> </li>
+                                <li>The Default Member value ⇒ helps you to identify the default member of the hierarchy. </li>
+                                <li>This default member acts as a fallback option when a hierarchy level is not explicitly defined in a query, ensuring consistent and predictable query results.</li>
+                                <li>If you do not provide any value, all members of the hierarchy are default members.</li>
+                                <li>Orphan Nodes
+                                    <ul>
+                                        <li>An orphan node in a hierarchy is a member that has no parent member.</li>
+                                        <li>Level hierarchies offer four different ways to handle orphan nodes. They are as follows:</li>
+                                        <li>Root Nodes</li>
+                                        <li>Any orphan node will be defined as a hierarchy root node.</li>
+                                        <li>Error</li>
+                                        <li>When encountering an orphan node, the view will throw an error.</li>
+                                        <li>Ignore</li>
+                                        <li>Orphan nodes will be ignored.</li>
+                                        <li>Step Parent</li>
+                                        <li>Orphan nodes are assigned to a step parent you specify.</li>
+                                        <li>If you choose to assign an orphan node to a step parent, the following rules apply:</li>
+                                        <li>The step parent node must be already defined in the hierarchy at the ROOT level.</li>
+                                        <li>The step parent ID must be entered according to the node style defined in the hierarchy</li>
+                                    </ul>
+                                </li>
+                                <li>Root Node Visibility
+                                    <ul>
+                                        <li>The value helps modeler know if it needs to add an additional root node to the hierarchy.  </li>
+                                        <li>This ensures that the hierarchy has a well-defined starting point</li>
+                                        <li>Consider an organizational structure stored in a parent-child hierarchy, where each employee reports to a manager, and the hierarchy culminates at the CEO.</li>
+                                        <li><b>Add Root Node:</b> By setting the Root Node Visibility to &quot;Add Root Node&quot; and specifying &quot;Company&quot; as the root node value, the hierarchy would display &quot;Company&quot; at the top, under which the CEO and subsequent reporting lines are organized.</li>
+                                        <li><b>Ignore Root Node:</b> If the Root Node Visibility is set to &quot;Ignore Root Node,&quot; the hierarchy would begin directly with the CEO, followed by the respective managerial levels, omitting the overarching &quot;Company&quot; node.</li>
+                                    </ul>
+                                </li>
+                                <li>Time-Dependent Hierarchies
+                                    <ul>
+                                        <li>If elements in your hierarchy are changing elements (time dependent elements) such as human resources applications with their organizations, or material management systems with BOMs where information is reliant on time., you can enable the parent-child hierarchy as a time dependent hierarchy. In other words, if you are creating hierarchies that are relevant for specific time period, then enable time dependency for such hierarchies. This helps you display different versions on the hierarchy at runtime.  </li>
+                                        <li>Your source data needs to contain definition columns consisting of a <i>Valid From</i> and a <i>Valid To</i> column.  </li>
+                                        <li>When a hierarchy needs to show elements from an interval, you have to define two input parameters; a <i>From</i> <i>Parameter</i>, and a <i>To Parameter</i>  </li>
+                                        <li>If the hierarchy needs to show elements valid on a specific date, you need one input parameter defined as the <i>Key Date</i>.  </li>
+                                        <li><img src="https://remnote-user-data.s3.amazonaws.com/4nxnhxsKORX5KOdMJ10fSAmsZHkA-erZdt314B9hpWuV0waOxlF1BQMxCYhcX8xFJQ9fVJt0FfatUCgRoMSlegbLtH6pM_PHaBoaUrNj0KUF55D_IwbFJCjTmsZCN6EV.png" width="1069" height="411.15384615384613"/></li>
+                                        <li>Consider a company&#39;s organizational chart where an employee transfers from the &quot;Marketing&quot; department to the &quot;Sales&quot; department on January 1, 2025. </li>
+                                        <li>The employee&#39;s record would have two entries: one with a <b>Valid To</b> date of December 31, 2024, under &quot;Marketing,&quot; and another with a <b>Valid From</b> date of January 1, 2025, under &quot;Sales.&quot;  </li>
+                                        <li>By setting the query&#39;s key date to December 2024, the employee appears under &quot;Marketing.&quot; Setting it to February 2025 shows the employee under &quot;Sales.&quot;  </li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        </li>
+                    </ul>
+                </li>
+                <li>Type of Generated Hierarchy
+                    <ul>
+                        <li>When you define a hierarchy in an SAP HANA Cloud calculation view, whether it is a level or parent-child hierarchy, the hierarchy is materialized upon build/deployment by various tables and/or views in the HDI Container schema (column views or classic SQL views)</li>
+                        <li>These generated objects provide detailed hierarchy node relationship data to enable processing of the hierarchy when the front-end tool is not able to generate the hierarchy relationships itself.</li>
+                        <li>A key setting allows you to influence the way SAP HANA translates the defined hierarchy into technical tables and views in the database. This is the Hierarchy Type setting, which you can define in the Semantics of the Calculation View, in the View Properties  ⇒ General tab.</li>
+                        <li>Auto (default value)</li>
+                        <li>This setting is useful if you exchange views between SAP HANA Cloud and On-Premise, because upon build, SAP HANA generates the following:</li>
+                        <li>In SAP HANA Cloud: classic SQL views to materialize the SQL hierarchy</li>
+                        <li>In SAP HANA On-Premise: MDX hierarchies (only compatible with SAP HANA on-Premise), including the metadata defining the hierarchy, as well as column views materializing the MDX hierarchy. No SQL Hierarchy view is generated.</li>
+                        <li>SQL Hierarchy Views</li>
+                        <li>Upon build, classic SQL views are generated to materialize the SQL hierarchy.</li>
+                        <li>No Hierarchy Views</li>
+                        <li>Upon build, the metadata of the hierarchies is generated (_SYS_BI.BIMC* tables) but the hierarchies themselves (detailed list of members, and so on) are NOT generated.</li>
+                        <li>This setting is should be used when the consuming front-end tool itself can generate the set of hierarchy members and their relationships, based on the hierarchy metadata defined in the BIMC tables.</li>
+                        <li>Assume one level hierarchy, PROD_LEV_HIER, has been modeled within the Calculation View HC300::CVC_SALES_HIER.</li>
+                        <li>Then the SQL Hierarchy view is called HC300::CVC_SALES_HIER/PROD_LEV_HIER/sqlh/PROD_LEV_HIER.</li>
+                    </ul>
+                </li>
+                <li><a isRemReference="true" href="../SAP%20HANA/SQLSCRIPT/Query%20Hierarchies%20using%20SQL.html?isPin=false">Query Hierarchies using SQL</a></li>
+            </ul>
+        </li>
+        <li>Projection node
+            <ul>
+                <li>To select only the required columns from a data source.</li>
+                <li>To define calculated columns.</li>
+                <li>To define Input parameters and Variables that request values at run-time, such as user-prompts.</li>
+                <li>To apply a filter on the data source.</li>
+            </ul>
+        </li>
+        <li>Cube with Star Join Calculation View
+            <ul>
+                <li>An extension to the cube calculation view is the cube with star join.  </li>
+                <li><b>Processing Engine:</b> OLAP Engine  </li>
+                <li>In addition to the capabilities of the cube type of calculation view, a cube with star join calculation view allows you to connect dimension calculation views so that you significantly expand the capabilities for analysis by providing additional attributes. For example, if you create a sales cube calculation view, which provides only limited attributes such as a product number, you could then join the product dimension calculation view to provide many more product-related attributes such as product description, supplier, color, and price. You could then aggregate the sales revenues by product color, supplier, and so on.  </li>
+                <li>The type of joins between the fact and dimension tables within the star schema can be defined in the <i>Star Join</i> node  </li>
+                <li><img src="https://remnote-user-data.s3.amazonaws.com/Yslp05FEvFpQkeEfshSPX59-FAv1adfDYRgIH5GRuBrd_fczNfc_vg_BI_iWsjuoNPLvCmEDAuqLBev_K49xOMB8LbN72loPv_2WRM7M55pK2Uir_RlZFVAh3TpKAcBK.png" width="1140" height="708.4073107049608"/></li>
+                <li></li>
+            </ul>
+        </li>
+        <li>Client-Dependent Views
+            <ul>
+                <li>Almost all tables in SAP applications are client-dependent. When you select data from an SAP system database, it usually only makes sense to request data for one client number.  </li>
+                <li>calculation view can use the client column property to enable automatic client filtering when you work on data from SAP applications. You do not need to define an explicit filter on the client column each time you create a calculation view.  </li>
+                <li><img src="https://remnote-user-data.s3.amazonaws.com/yK1X0OJemdsphoN6WdQv1hqkAkA-aWOsWe5mURmNUzAwsA50S8Pn4dAZ-LhCguxQ5FM5zKHCPcwDV_-LvKOWrJcHfxfEnAvSZKb8ZI8J2t4uRZ0hZXbTKnH2vYEHTS1e.png" width="1140" height="789.0782608695653"/></li>
+                <li><b>Default Client</b> </li>
+                <li>Cross-Client: All the data is retrieved regardless of the client number.</li>
+                <li>Fixed Client: You specify an SAP Client number (for example, 200) and the data sources are automatically filtered to include only the rows with this client number.</li>
+                <li>Session Client: The source tables are filtered dynamically based on a client value that is specified for each user in the USERS table of SAP HANA Cloud.</li>
+                <li>As the technical user has no default client assigned, if you specify a Column Client property for a calculation view and set the Default Client to Session Client, the data preview in the Developer perspective will not retrieve any data.</li>
+                <li>To by-pass the technical user and apply client filtering based on a classic database user, you can do one of the following with this user:</li>
+                <li>Use the data preview feature Data Preview with Other Database User</li>
+                <li>Client Columns</li>
+                <li>For databases coming from the remote system</li>
+                <li>Select the table in the mapping and expand the properties tab at the bottom</li>
+                <li>You can find a client column select field click on the value help and select the client column</li>
+            </ul>
+        </li>
+        <li>SQL Views
+            <ul>
+                <li>created using the SQL language</li>
+            </ul>
+        </li>
+        <li>Column Tables
+            <ul>
+                <li>SAP HANA Cloud supports optimized tables. </li>
+                <li>These tables are optimized to provide you with a very fast read-performance  </li>
+            </ul>
+        </li>
+        <li>Row Tables
+            <ul>
+                <li>SAP HANA Cloud supports traditional tables</li>
+                <li>It makes no difference to a modeler whether the table is row or column and all modelling functions are available with both types</li>
+            </ul>
+        </li>
+        <li>Virtual Tables
+            <ul>
+                <li>Is a table that is part of the SAP HANA Cloud database and is mapped to a remote table outside of SAP HANA Cloud.  </li>
+                <li>you reach external data sources (database tables, flat files, spreadsheets)</li>
+            </ul>
+        </li>
+        <li>Table functions
+            <ul>
+                <li>Functions can be used to define complex data sources using <a isRemReference="true" href="../SAP%20HANA/SQLSCRIPT/SQLScript.html?isPin=false">SQLScript</a> are used to return a tabular data  </li>
+                <li>All output parameters of the table function are offered as input columns to the calculation view node. If your table function requires input parameters you can first define input parameters in the calculation view and then use the <a isRemReference="true" href="../SAP%20HANA/Data%20Model%20Concepts/Parameter%20Mapping.html?isPin=false">Parameter Mapping</a> function to map them.  </li>
+                <li><a isRemReference="true" href="../SAP%20HANA/Nodes/Table%20Function%20Node.html?isPin=false">Table Function Node</a></li>
+                <li>FUNCTION &quot;com.sap.hana.example::TABLE_FUNC_SCALE&quot; (VAL CHAR)
+RETURNS TABLE (A INT, B INT)
+LANGUAGE SQLSCRIPT
+AS
+BEGIN
+    RETURN SELECT A, :VAL * B AS B FROM MYTABLE;
+END</li>
+            </ul>
+        </li>
+        <li>Scalar Function
+            <ul>
+                <li>Think of them as dynamic tables that are created at runtime.</li>
+                <li>Reusable block of data processing logic using the powerful SQLScript language to generate a result as either a single value (scalar), or a complete data set (table ).</li>
+                <li>These are always read-only. This means it is not possible to use any data definition language such as create table or alter table. It is not possible to use data manipulation statements such as update or insert into. These block never change the database.</li>
+                <li>One of the common uses of a scalar function in a calculation view, is to derive values for input parameters of calculation view</li>
+                <li>Can call other functions, which encourages a modular design approach to maximize reuse.</li>
+                <li>FUNCTION &quot;com.sap.hana.example::SCALAR_FUNC_ADD_MUL&quot; (x DOUBLE, y DOUBLE)
+RETURNS RESULT_ADD DOUBLE, RESULT_MUL DOUBLE
+LANGUAGE SQLSCRIPT
+AS
+BEGIN
+    RESULT_ADD := :x + :y;
+    RESULT_MUL := :x * :y;
+END</li>
+            </ul>
+        </li>
+        <li></li>
+
+    </ul>
+    </body>
+</html>

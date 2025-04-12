@@ -1,0 +1,54 @@
+<html>
+  <head>
+    <style>
+      .Portal {
+        border-color: lightblue;
+        border-style: solid;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>
+      SAP Hana Express Edition On Premise
+    </h1>
+    <br/>
+    <ul>
+        <li>Installation
+            <ul>
+                <li>When you download <b>SAP HANA Express Edition</b> from the <b>SAP Download Manager</b>, it is typically provided as a <b>preconfigured virtual machine image. </b> </li>
+                <li><b>.ova file</b> (for VirtualBox or VMware) – This is an &quot;Open Virtual Appliance&quot; format that contains the entire virtual machine setup, including the operating system, SAP HANA software, and preconfigured settings</li>
+                <li>PDF document for configuring in VMware. passwords, steps</li>
+                <li><a isRemReference="true" href="?isPin=false">VMware Workstation or VMware Player: </a></li>
+                <li><a isRemReference="true" href="?isPin=false">Oracle VirtualBox: </a></li>
+                <li><b>Why can&#39;t you directly run it without VirtualBox or VMware?</b> </li>
+                <li>The <b>.ova file</b> is designed to run inside a virtualized environment that mimics the hardware and software configuration required by SAP HANA. It already includes a Linux-based OS (SLES or RHEL) and all necessary dependencies.</li>
+                <li>Without a hypervisor like <b>VMware</b> or <b>VirtualBox</b>, you would have to manually install and configure SAP HANA on a bare-metal server running a compatible OS, which is complex and time-consuming.</li>
+                <li><a isRemReference="true" href="?isPin=false">Host mapping</a></li>
+            </ul>
+        </li>
+        <li>Check status of Apps
+            <ul>
+                <li>login with admin u: xs-admin-login</li>
+                <li>password is same as the one you used while creating the database</li>
+                <li>xs apps | grep webide</li>
+                <li>You should see STARTED and 1/1 which mean 1 out of 1 instance is used</li>
+            </ul>
+        </li>
+        <li>Check status of HDB
+            <ul>
+                <li>In the Virtual machine </li>
+                <li>Open CLI ⇒ HDB info</li>
+            </ul>
+        </li>
+        <li>WEBIDE/DB Explorer
+            <ul>
+                <li>open edge</li>
+                <li><a isRemReference="true" href="?isPin=false">Host mapping</a></li>
+                <li>hxehost:39030 or 192.168.1.7:39030</li>
+                <li>click webide u:XSA_ADMIN p:same which you created at the time of installation</li>
+            </ul>
+        </li>
+
+    </ul>
+    </body>
+</html>

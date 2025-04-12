@@ -1,0 +1,954 @@
+<html>
+  <head>
+    <style>
+      .Portal {
+        border-color: lightblue;
+        border-style: solid;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>
+      Data Provisioning
+    </h1>
+    <br/>
+    <ul>
+        <li></li>
+        <li>Cross-Container Access as User Provided Service
+            <ul>
+                <li>To enable access to external schema you need a user-provided service</li>
+                <li>You simply choose the name of the service and a user id and password that has privileges to all external objects that you wish to access through the service</li>
+                <li>These privileges in turn will be granted by this service user, to the container&#39;s technical user and application users using a .hdbgrants file.</li>
+                <li>After you create the service, open the mta.yaml file, and notice how the user-provided service has been automatically added as a resource assigned to your HDB module.</li>
+                <li><b>Steps</b> </li>
+                <li>Create a new schema and import data in SAP Hana DB main instance (SYSTEM Instance)</li>
+                <li>Create a new user and role <a isRemReference="true" href="../SAP%20HANA/Security/CREATE%20USER%20AND%20ROLE%20WITH%20DBADMIN.html?isPin=false">CREATE USER AND ROLE WITH DBADMIN</a></li>
+                <li>Grant container-specific access using <q>GRANT SELECT</q> on the external schema or container.</li>
+                <li><b>Create a Cross service container as User provided service from BAS to the database</b> </li>
+                <li>In BAS ⇒ SAP Hana Project tab</li>
+                <li>Select the hana project</li>
+                <li>Expand database connection</li>
+                <li>Add new database connection</li>
+                <li>Connection Type ⇒ Create User provided service instance</li>
+                <li>Enter service instance name ⇒ EFASHION_UPS</li>
+                <li>Connect to database ⇒ Use deployment target container database</li>
+                <li>use name ⇒ user of schema with admin privilege</li>
+                <li>password</li>
+                <li>Schema name ⇒ EFASHION</li>
+                <li>.hdbgrants file
+                    <ul>
+                        <li>is used to define the set of authorizations that will be given to two specific users, the <i>Object Owner</i> and the <i>Application User</i>.  </li>
+                        <li>The user-provided service&#39;s user may have a lot of privileges on external objects, Technically, it would be possible to grant all the database privileges of that user to the object owner and application user, Instead, we should grant only the privileges that are needed, in other words, a subset of the service user&#39;s privileges.  </li>
+                        <li>We define the privileges required by the object owner and application user using a special file with the suffix <i>.hdbgrants</i>  </li>
+                        <li>{
+    &quot;cross_container_user_provided_service_name&quot;:{
+        &quot;object_owner&quot;:{
+            &quot;global_roles&quot;:{
+                roles: [&quot;bindrole&quot;]
+}
+}
+ &quot;application_user&quot;:{
+            &quot;global_roles&quot;:{
+                roles: [&quot;bindrole&quot;]
+}
+}
+}
+}
+}</li>
+                        <li>{
+    &quot;cross_container_user_provided_service_name&quot;:{
+        &quot;object_owner&quot;:{
+            &quot;global_object_privileges&quot;:{
+                &quot;name&quot;: &quot;CL_RS_OP_SDA&quot;,
+                &quot;type&quot;: &quot;REMOTE SOURCE&quot;,
+                &quot;privileges&quot;: [&quot;CREATE VIRTUAL TABLE&quot;]
+}
+}
+ &quot;application_user&quot;:{
+            &quot;global_object_privileges&quot;:{
+                 &quot;name&quot;: &quot;CL_RS_OP_SDA&quot;,
+                &quot;type&quot;: &quot;REMOTE SOURCE&quot;,
+                &quot;privileges&quot;: [&quot;CREATE VIRTUAL TABLE&quot;]
+}
+}
+}
+}
+}</li>
+                        <li><b>Object Owner:</b> </li>
+                        <li>When a database artifact is deployed to a database container, it is owned by the technical user of the container, NOT the developer who created the source file. Only the object owner can alter and drop the object. During deployment, the object owner must have privileges to access any external objects that have been referenced in any calculation view.</li>
+                        <li><b>Application User:  </b> </li>
+                        <li>The application user is used to bind the HDI container to a consuming application. In the context of calculation view modelling, it is typically the user <i>&lt;container_schema_name&gt;...RT</i> who performs a number of modelling operations, including data preview on top of the HDI container connection  </li>
+                        <li>if a certain privilege or role has been granted to the object owner and/or application user when you last built the .hdbgrants file, this will not be automatically reverted if you remove the privilege/role from the .hdbgrants file and build the file again.</li>
+                        <li>Instead, you need to create a .hdbrevokes file, with the same structure, listing (only) the privileges and/or roles that you want to revoke. You must also remove these privileges and/or roles from the .hdbgrants. This will be effective after you build the .hdbrevokes file.</li>
+                    </ul>
+                </li>
+                <li>Synonyms
+                    <ul>
+                        <li>The final step in the setup of external schema access is to create synonyms that point to the target objects of the external schema. The synonyms declaration is done in a .hdbsynonym file. This file type can be edited either with the text editor, as in the example below, or a dedicated synonym editor.</li>
+                        <li>{
+  &quot;HA300::SALES_DATA&quot;: {
+    &quot;target&quot;: {
+      &quot;object&quot;: &quot;SALES_DATA&quot;,
+      &quot;schema&quot;: &quot;TRAINING&quot;
+    }
+  },
+  &quot;HA300::SALES_DATA_NEW&quot;: {
+    &quot;target&quot;: {
+      &quot;object&quot;: &quot;SALES_DATA_NEW&quot;,
+      &quot;schema&quot;: &quot;TRAINING&quot;
+    }
+  },
+  &quot;HA300::CUSTOMER&quot;: {
+    &quot;target&quot;: {
+      &quot;object&quot;: &quot;CUSTOMER&quot;,
+      &quot;schema&quot;: &quot;TRAINING&quot;
+    }
+  }
+}</li>
+                        <li>Name of synonym: You will refer to this name whenever you need to access the target object from the HDI container</li>
+                        <li>Object: The actual object name in the target schema, such as a table name.</li>
+                        <li>Schema: Where the target object is found.</li>
+                    </ul>
+                </li>
+                <li>Create a calculation view and add table in projection from cross container user provided service and create synonym</li>
+                <li>There&#39;s no need for a user-provided service if the external container service is running in the same space as the one your project is assigned to.
+
+You can add the external HDI container service to your project (which automatically adds it to the mta.yaml file).
+
+You must create roles inside the external container that contain the relevant privileges to all objects that could be accessed by the service.  The .hdbgrants file refer to the dedicated roles created inside the external container</li>
+            </ul>
+        </li>
+        <li>Connect on-premise Hana Database to SAP Hana Cloud
+            <ul>
+                <li>Connect subaccount to <a isRemReference="true" href="?isPin=false">Cloud Connector - Principal Propagation</a></li>
+                <li>Choose cloud to on-premise in the side tab</li>
+                <li>Select add</li>
+                <li>Input Backend type ⇒ SAP Hana</li>
+                <li>Input protocol ⇒ TCP</li>
+                <li>port ⇒ 39015</li>
+                <li>virtual host and port can be same</li>
+                <li>Make Sure Cloud Connector property is allowed in SAP Hana Cloud Instance. Go to SAP Hana Cloud Central ⇒ edit the Hana instance ⇒ select Connections tab ⇒ Enable Cloud Connector</li>
+            </ul>
+        </li>
+        <li>Access Tables of Other Schemas in SQL Console
+            <ul>
+                <li>If you want to access tables in another schema, the owner of that schema (or a user with <q>GRANT</q> option) must grant you the required privileges.</li>
+                <li>Grant SELECT Privileges on the Target Schema  </li>
+                <li><q>GRANT SELECT ON SCHEMA &lt;target_schema_name&gt; TO &lt;your_user_name&gt;;</q></li>
+                <li>Use Fully Qualified Table Names  </li>
+                <li><q>SELECT * FROM &lt;schema_name&gt;.&lt;table_name&gt;;</q></li>
+                <li>When querying tables from another schema, always specify the schema name before the table name.</li>
+            </ul>
+        </li>
+        <li>System Database
+            <ul>
+                <li>The primary and mandatory database created during the installation of an SAP HANA system. It handles system-wide management and administration tasks.</li>
+                <li><b>System Management</b>:</li>
+                <li>It manages the overall SAP HANA instance, including starting and stopping tenant databases.</li>
+                <li><b>User and Role Management</b>:</li>
+                <li>The system database is used to manage users and roles that can administer the entire SAP HANA system.</li>
+                <li><b>Monitoring and Logging</b>:</li>
+                <li>The system database collects and stores logs, traces, and system performance data.</li>
+            </ul>
+        </li>
+        <li>Tenant Database
+            <ul>
+                <li>A <b>Tenant Database</b> is an independently running database within the SAP HANA system. It stores application-specific data and runs separately from other tenant databases.</li>
+                <li><b>Isolation</b>:</li>
+                <li>Each tenant database is isolated from other tenant databases in terms of:</li>
+                <li>Data storage</li>
+                <li>Users and roles</li>
+                <li>Backup and recovery</li>
+                <li>Network access (separate ports)</li>
+                <li><b>Independent Administration</b>:</li>
+                <li>You can manage tenant databases independently (e.g., you can stop, start, back up, or restore them without affecting others).</li>
+                <li><b>Scalability</b>:</li>
+                <li>Multiple tenant databases can be created within a single SAP HANA system, making it suitable for multi-tenant applications or hosting services where different clients or applications require their own database.</li>
+            </ul>
+        </li>
+        <li>Mount Remote DB in Database Explorer
+            <ul>
+                <li>Select Add database.</li>
+                <li>Select database type ⇒ SAP HANA Database (Multitenant)</li>
+                <li>Input host name ⇒ hxehost</li>
+                <li>Input instance number ⇒ 90</li>
+                <li>Select system database</li>
+                <li>If you check Tenant Database, then input name ⇒ HXE, which is your tenant database name</li>
+                <li>Username input is SYSTEM</li>
+                <li>Password input is the same password that we used while installing the SAP Hana database</li>
+            </ul>
+        </li>
+        <li>Components for remote database
+            <ul>
+                <li><img src="https://remnote-user-data.s3.amazonaws.com/2CavY1g9smXaXPy2L5iQmqUKsoH8DWnUFbmY67ZC-N7EexkyEEiRl8U1xhJQAaY3Xwe49ewJyLUnUBXDe8S7XN2YZsV9kF7oVuN_XFmJOOrYO5F8itZFPAe18znSEk42.png" width="483" height="225.33468559837726"/></li>
+                <li>Connecting an SAP HANA Cloud target to an SAP HANA On-Premise source with SAP HANA smart data access requires an instance of the SAP Cloud Connector, acting as a reverse proxy to enter the company network where SAP HANA On-Premise runs.</li>
+                <li>SAP HANA Smart Data Access (SDA)
+                    <ul>
+                        <li>SDA provides <b>virtual access</b> to remote databases. Instead of physically replicating data, it creates virtual tables in SAP HANA Cloud that point to tables in the remote database.</li>
+                        <li>When you query the virtual table in SAP HANA Cloud, the data is fetched <b>on demand</b> from the remote database.</li>
+                        <li>supports access and integration of data from multiple remote systems in real-time</li>
+                        <li>Smart data access technology is included with SAP HANA on-premise and SAP HANA Cloud. </li>
+                        <li>Relies on built-in adapters that run on the SAP HANA database. There are mainly two types of adapters: ODBC and REST API adapters. The REST API adapters are only available in SAP HANA Cloud for Amazon Athena and Google BigQuery.</li>
+                    </ul>
+                </li>
+                <li>SAP HANA Smart Data Integration (SDI)
+                    <ul>
+                        <li>Is relevant for SAP HANA on-premise and also SAP HANA Cloud. </li>
+                        <li>The HanaAdapters run on data provisioning agent. You specify either a data provisioning agent or group in case several agents are part of a high-availability agent group.  The agent is initially connected to the SAP Hana cloud</li>
+                        <li>OData adapters run on the data provisioning server (inside the database). The location <b>dpserver </b>is automatically assigned and can’t be changed.</li>
+                        <li>Allow you to fetch data from a remote database in near real-time or periodically, depending on the replication method and configuration you use.</li>
+                        <li>Data Provisioning Server
+                            <ul>
+                                <li>This service is running in the SAP HANA instance. It needs to be enabled to support any SDI connectivity.</li>
+                            </ul>
+                        </li>
+                        <li>Data Provisioning Agent
+                            <ul>
+                                <li>This component is an application running on-premise, in your company network. This agent connects to the Data Provisioning Server and exposes various adapters so that they can be used by remote sources.</li>
+                            </ul>
+                        </li>
+                    </ul>
+                </li>
+                <li>Smart data quality
+                    <ul>
+                        <li>Is a set of functions provided by several components to cleanse and enrich data before it’s persisted in the SAP HANA database. </li>
+                        <li>Is relevant for SAP HANA on-premise but not for SAP HANA Cloud. For SAP HANA Cloud, a subset of SAP HANA smart data quality capabilities is provided by a subscription-based microservice called Data Quality Management Microservices (DQMm).</li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+        <li>Remote Subscriptions
+            <ul>
+                <li>Open Schema</li>
+                <li>Go to remote subscriptions ⇒ Right Click and select ⇒ Show Remote subscriptions</li>
+                <li>CHECK_REMOTE_SOURCE
+                    <ul>
+                        <li>The execution of this procedure is either successful (check passed), or if it fails you get some details about the root cause in the SQL console.</li>
+                        <li>CALL CHECK_REMOTE_SOURCE(&#39;&lt;remote_source_name&gt;&#39;);</li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+        <li>Datalake
+            <ul>
+                <li>You can create tables, views, access the data reside on HANA Cloud data lake using Database Explorer option as mentioned.</li>
+                <li>All the data where high latency is allowed can be stored in sap Hana data lake</li>
+                <li>Sap Hana Cloud instance can connect with SAP datalake through virtualization process or replication process</li>
+                <li>Date lake on sap Hana instance can be accessed under remote connections folder</li>
+                <li>Add Datalake to sap Hana Cloud main DB instance
+                    <ul>
+                        <li>Data lake is needed to store cold records which is not used for Analytics but still we need them</li>
+                        <li>Go to sap Hana cloud tool central</li>
+                        <li>Select the hana db instance</li>
+                        <li>go to actions and click on add Datalake </li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+        <li>CREATE REMOTE SOURCE
+            <ul>
+                <li>it does not depend on any schema, and a given remote source can serve virtual objects defined in more than one schema.  </li>
+                <li>CREATE REMOTE SOURCE &lt;name&gt; ADAPTER &quot;hanaodbc&quot; CONFIGURATION &#39;ServerNode=hanahost:39015;use_haas_socks_proxy=true;scc_location_id=L1&#39; WITH CREDENTIAL TYPE &#39;PASSWORD&#39; USING &#39;user=SYSTEM;password=Bismi@786&#39;</li>
+                <li>hanahost:39015 is the virtual host of cloud connector</li>
+                <li><b>Name</b> </li>
+                <li>The name of the remote source must be unique in the target database.</li>
+                <li><b>Adapter</b> </li>
+                <li>The adapter defines the type of source database or source system you want to access with the remote source</li>
+                <li><b>Location</b> </li>
+                <li>The location of a remote source refers to where the adapter is located.</li>
+                <li><img src="https://remnote-user-data.s3.amazonaws.com/EdaiOeh7T0Rr4sCD1EhYAsXBNGJXxikYO37RWAkxci3fNp_3hYn7LHTSq1khcsRvK3s2pgBpKXUZnUAD0D8FLVnQq400SsZhpVIByq8uKKsAUvtaU51E1K-Dta664if2.png" width="425" height="206.14942528735634"/></li>
+                <li>For SAP HANA smart data access, the adapters always run on the <b>indexserver </b>of the target SAP HANA instance.</li>
+                <li><img src="https://remnote-user-data.s3.amazonaws.com/cNJ8X484Z5cFAS-hv1cBXOq3M4X3NMtN7h-Jn3Yhj-yktyCaPUKIeSo6zfBL-s0Ew63Y3KE4-qx_l_3Pk4Z7nZo7Hw-XXgU_pzwihJJhHlzT4JbNWuF6poi2YG3oc4e3.png" width="425" height="378.1034482758621"/></li>
+                <li><b>Configuration</b> </li>
+                <li>To identify the source system. For example, host and port, reference to a web service URL, or reference to a Data Source Name or DSN. This includes any additional setting specific to the remote system.</li>
+                <li>To identify the SAP Cloud Connector instance to be used, when connecting to an SAP on-premise system through the SAP Cloud Connector</li>
+                <li>To provide additional configuration for the remote source Behavior, such as the Data Manipulation Language (DML) mode (read/write or read-only), or some performance-related settings</li>
+                <li>To pass some security-related information, such as certificates</li>
+                <li><b>Credentials</b> </li>
+                <li>For example, this can be the name and password of a technical user, the mention of secondary credentials (mapping of technical users from the remote system to local users), or a certificate-based authentication method (X.509).</li>
+                <li>Preparation Steps
+                    <ul>
+                        <li><img src="https://remnote-user-data.s3.amazonaws.com/mfIUwXkhb1Ry-YWnZk_X0wDWXw8z9gzmZQ6CfAyvT_zCsPoA8yOUWqGf-NMVdyty0F1MO9mx842wfzOavTq2uRnXgR9y6Fm6ZlPoqAd0NKusX21bIEUOxiyNUFa3BWn6.png" width="402" height="188.31553398058253"/></li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+        <li>Matching Adapter Name
+            <ul>
+                <li>SELECT * FROM &quot;SYS&quot;.&quot;ADAPTERS&quot;;
+
+CALL CHECK_REMOTE_SOURCE(&#39;&lt;remote_source_name&gt;&#39;); </li>
+                <li>The result shows all the system adapters (SDA), plus all the adapters that are currently registered on any of the data provisioning agents connected to your local SAP HANA database.  </li>
+            </ul>
+        </li>
+        <li>Virtual Table
+            <ul>
+                <li>Select Remote Source and filter the table, Select the table and click Create Virtual table</li>
+                <li><img src="https://remnote-user-data.s3.amazonaws.com/DIwLPXF1Cb0UkO9mm1L0IctxVjXxPynNUeJ5b_0EXQS0BPNgzga_4SX3r2zOhcPZkCOkF7EVlSI1zo-KF-Y5XknJzm1h6Qn0fOKgd-keXSTMz1JO1ksV125KWzgxkj79.png" width="425" height="206.14942528735634"/></li>
+                <li>CREATE VIRTUAL TABLE &lt;schema&gt;.&lt;virtual_table_name&gt;
+AT &lt;remote_source&gt;.&lt;database&gt;.&lt;schema&gt;.&lt;object_name&gt;;
+
+CREATE VIRTUAL TABLE &quot;CL_DATA_ENGINEER_FED&quot;.&quot;VT_SNWD_PO&quot;
+AT &quot;CL_RS_OP_SDA&quot;.&quot;NULL&quot;.&quot;EPM_MODEL&quot;.&quot;SNWD_PO&quot;;
+
+CREATE VIRTUAL TABLE &quot;CL_DATA_ENGINEER_FED&quot;.&quot;VT_SNWD_PO_I&quot;
+AT &quot;CL_RS_OP_SDA&quot;.&quot;NULL&quot;.&quot;EPM_MODEL&quot;.&quot;SNWD_PO_I&quot;; </li>
+                <li>The Database in the SQL query is always NULL when the remote system is SAP Hana on-premise Database</li>
+                <li>As a general rule, when you create a virtual table pointing to a remote database system, the remote user derived from the remote source definition (or an existing secondary credential associated to your user) only needs the CATALOG READ privilege (SAP HANA) or an equivalent, but NOT necessarily a SELECT privilege on the remote table or view (or its containing schema).  </li>
+                <li>The local user who created the remote source is automatically granted the privilege to create virtual tables on this remote source.</li>
+                <li>Any other use requires the CREATE VIRTUAL TABLE privilege on the remote source.</li>
+                <li>In any case, the local user needs CREATE ANY privileges on the schema where the virtual table will be stored.</li>
+                <li>A dedicated design-type artifact, .hdbvirtualtable, is used for that purpose.</li>
+            </ul>
+        </li>
+        <li>Maintaining Privileges on a Remote Source
+            <ul>
+                <li>The remote source privileges are object privileges (they refer to a specific remote source object) </li>
+                <li>Administration privileges:</li>
+                <li>ALTER</li>
+                <li>DROP</li>
+                <li>Privileges to operate the remote source:</li>
+                <li>CREATE VIRTUAL TABLE</li>
+                <li>LINKED DATABASE</li>
+                <li>CREATE REMOTE SUBSCRIPTION</li>
+                <li>PROCESS REMOTE SUBSCRIPTION EXCEPTION</li>
+                <li>Another privilege is CREDENTIAL ADMIN, which is required to administer secondary credentials on a remote source that you did NOT create.</li>
+                <li>All these privileges are classically administered in the SAP HANA Cockpit or with GRANT and REVOKE statements in an SQL console.</li>
+            </ul>
+        </li>
+        <li>Linked Database
+            <ul>
+                <li>With SAP HANA smart data access connections based on ODBC adapters, there&#39;s a way to consume remote tables and views that doesn’t require the creation of virtual tables</li>
+                <li>feature is available between two SAP HANA systems, either cloud or on-premise</li>
+                <li>When you access a remote table or view with the linked database feature, SAP HANA creates a hidden virtual table located in the schema <i>_SYS_LDB</i>.</li>
+                <li>This hidden virtual table is used to store the metadata of the remote object and isn’t meant to be queried.</li>
+                <li>To use the linked database feature, a specific privilege LINKED DATABASE on the remote source must be granted to the consumer of remote objects.</li>
+                <li>SELECT * FROM &quot;remote_source&quot;.&quot;remote_schema&quot;.&quot;remote_object&quot;</li>
+                <li>To refresh the metadata for all linked objects</li>
+                <li>ALTER REMOTE SOURCE &lt;remote_source&gt; REFRESH LINKED OBJECTS;</li>
+                <li>To delete the internally generated objects associated with linked database access</li>
+                <li>ALTER REMOTE SOURCE &lt;remote_source_name&gt;
+DROP LINKED OBJECTS [CASCADE | RESTRICT];</li>
+                <li>With the CASCADE option, the statement deletes all linked objects as well as any database object that depend on them.</li>
+                <li>With the RESTRICT option, the statement deletes all linked objects ONLY if no database object at all depend on them. If there&#39;s even a single dependency on a single linked object, no linked object at all is deleted.</li>
+            </ul>
+        </li>
+        <li>Linked Database – Optimized Mode
+            <ul>
+                <li>In scenarios where both the source and target systems are SAP HANA databases (and connected via an SAP HANA smart data access remote source), it&#39;s possible to use an optimized version of the linked database</li>
+                <li>Compared with the standard linked database feature, this one does NOT create hidden virtual tables, but caches locally the metadata of the remote objects you select data from. So there&#39;s no housekeeping needed (no hidden virtual tables) and no need to refresh statistics for remote objects: They&#39;re fetched automatically when needed.  </li>
+                <li>There are a few limitations to SAP HANA features with the linked database – optimized mode. Please refer to SAP Note 2605574.</li>
+                <li>CREATE REMOTE SOURCE MY_HANA1
+ADAPTER &quot;hanaodbc&quot;
+CONFIGURATION &#39;Driver=libodbcHDB.so;ServerNode=myserver:30115;linkeddatabase_mode=optimized&#39;
+WITH CREDENTIAL TYPE &#39;PASSWORD&#39; USING &#39;user=user1;password=Test1234&#39;;</li>
+            </ul>
+        </li>
+        <li>Replication Services
+            <ul>
+                <li>When you need to migrate an on-premise SAP HANA database to an SAP HANA Cloud database and want to select a subset of tables and views, you should consider this services.</li>
+                <li>Is used to replicate from SAP HANA on-premise to SAP HANA Cloud, and not the other way round. </li>
+                <li>Doesn’t support non-SAP data sources or targets.</li>
+                <li>Is available in SAP HANA Cloud Central and allows you to replicate users (including their privileges), tables, SQL views, and calculation views from SAP HANA on-premise to the SAP HANA Cloud.</li>
+                <li><img src="https://remnote-user-data.s3.amazonaws.com/JwNhSytL0MQPNY7tpX7huoPssQNWn2vn4gfjyT9Xk-O7Wl7Taskj4kl5IwRT5-u2wFxtNXEyDW8pAmVrMu8Nt84es9OOHW7ShBJPlTBQ7iguHH1-DBHgzJTt7i-BDY16.png" width="425" height="202.24137931034483"/></li>
+                <li>Open SAP Hana Cloud Central</li>
+                <li>Select create replication task in the data application card of the overview tab</li>
+                <li>Select the remote connection</li>
+                <li>Select the users to be replicated if needed</li>
+                <li>Select the source objects to be replicated</li>
+                <li>Change Data Capture (CDC)
+                    <ul>
+                        <li>New data from the remote database is captured in near real-time using techniques. It listens for changes (insert, update, delete) and immediately applies them to the target table in SAP HANA Cloud.</li>
+                    </ul>
+                </li>
+                <li><b>Batch replication</b>: Data is fetched periodically based on a schedule you define (e.g., every hour, daily).</li>
+            </ul>
+        </li>
+        <li>Replica Tables
+            <ul>
+                <li>At first, creating a report on top of a virtual table might seem a good option because this approach supports a quick implementation and easy maintenance.</li>
+                <li>But in some situations, replicating the remote data to the local SAP HANA system might offer better query performance than accessing the data in a remote table. So, you might consider abandoning the virtualization approach and reimplementing a replication approach.</li>
+                <li>But the problem with switching the data provisioning approach is that you&#39;d need toadjust all applications to point to the new target table where the replicated data is loaded. This would generate transport and testing tasks that you might not want to be burdened with.</li>
+                <li>A replica table sits alongside a virtual table and has the same structure. The replica table captures and stores the data in real-time.</li>
+                <li>The key feature of implementing a replica table is a toggle that allows you to easily switch between the virtual table and the replica table. This means that you can switch to the replica table if performance begins to degrade and switch back when performance improves.</li>
+                <li>You can easily identify problematic remote queries and cases where it might be beneficial to toggle using two monitoring views:</li>
+                <li>M_EXPENSIVE_STATEMENTS
+                    <ul>
+                        <li>When the execution time of a SQL statement that&#39;s run on a virtual table exceeds a certain threshold, it’s included in the M_EXPENSIVE_STATEMENTS monitoring view.  </li>
+                    </ul>
+                </li>
+                <li>M_REMOTE_STATEMENTS</li>
+                <li>Each virtual table can only have one replica table.</li>
+                <li>A replica table is updated in real time when the source table is updated</li>
+                <li>Replica tables are automatically generated and stored in an internal schema, managed by an internal user. They&#39;re hidden behind the scenes.</li>
+                <li>To add a replica to a virtual table, execute the following statement  </li>
+                <li>ALTER VIRTUAL TABLE &lt;virtual_table_name&gt; 
+ADD SHARED [SNAPSHOT] REPLICA;
+
+//To directly access the virtual table again
+
+SELECT * FROM &lt;virtual_table_name&gt; 
+WITH HINT(NO_VIRTUAL_TABLE_REPLICA);
+
+//use a SET statement before you execute the query.
+
+SET &#39;VIRTUAL_TABLE_REPLICA&#39; = &#39;FALSE&#39;; 
+SELECT * FROM &lt;virtual_table_name&gt;;
+
+//Temporarily disable the replica using an ALTER statement.
+
+ALTER VIRTUAL TABLE &lt;virtual_table_name&gt; DISABLE REPLICA;
+
+//Delete the replica using a DROP command.
+
+ALTER VIRTUAL TABLE &lt;virtual_table_name&gt; 
+DROP REPLICA;</li>
+            </ul>
+        </li>
+        <li>SAP Hana Flowgraph
+            <ul>
+                <li>You create a flowgraph by creating a design time file in your project, with the extension <i>.hdbflowgraph</i>  </li>
+                <li>You simply select node types and drag them to the canvas. You then configure each node with specific settings to define what should happen when the data travels through the node.  </li>
+                <li>It&#39;s possible to read from different data sources and to write to different data targets within the same flowgraph.</li>
+                <li>The sources can be virtual tables, local tables or views. You can combine data and split it up for distribution.  </li>
+                <li>you need to deploy the flowgraph. During deployment, the definitions are checked and executable run-time objects are generated in the container (database schema) of your module. </li>
+                <li>After successful deployment, you can execute the flowgraph manually from the graphical editor, or you can schedule it.</li>
+                <li>While both calculation views and flowgraphs in SAP HANA can be used for data transformation, flowgraphs are typically preferred when you need more complex data manipulation, especially for large-scale ETL (Extract, Transform, Load) operations involving data cleansing, complex joins, data quality checks, and data persistence to external sources</li>
+                <li>What can you do if you don&#39;t yet have an existing table with suitable data types?</li>
+                <li>You can define the target as a template table. If you choose a template table, a new table is automatically proposed based on the output structure of the predecessor node.</li>
+                <li>Settings
+                    <ul>
+                        <li>You can generate as a procedure or a batch type</li>
+                        <li>If you have select batch type ⇒ In database explorer expand schema ⇒ Select Tasks ⇒ Click on execute</li>
+                        <li><img src="https://remnote-user-data.s3.amazonaws.com/k4X0pi5zgheZy0Li1LNR9mLnYvvAiUY0xVC-yyHB95YVpBmNo1xz_pjfMmqF93nOc4agFDwknqg3W_6bzCeoBigltyDiuRiihw1T9R08Eqt-suxKhFYir_RTn177SoNy.png" width="390.50103759765625" height="217.9272522813692"/></li>
+                        <li>Setting | Purpose | Created run-time obj</li>
+                        <li><i>Batch task</i> | Process data as a batch or initial load |
+                            <ul>
+                                <li>A procedure</li>
+                                <li>A task for batch load or initial load</li>
+                            </ul>
+                        </li>
+                        <li><i>Real-time task</i> | Process data in real time
+                            <ul>
+                                <li>A procedure</li>
+                                <li>A task for batch load or initial load</li>
+                                <li>A task for processing updates in the sources in real-time</li>
+                            </ul>
+                        </li>
+                        <li><i>Transactional Task</i> | Process data in real time without initial load 
+                            <ul>
+                                <li>A procedure</li>
+                                <li>A task for processing updates in the sources in real-time</li>
+                            </ul>
+                        </li>
+                        <li><i>Procedure</i> | Schedule or integrate the transformation in another procedure or flowgraph
+                            <ul>
+                                <li>Only a procedure</li>
+                            </ul>
+                        </li>
+                        <li>When you load to a data target that already contains data, you need to specify how the new and existing records are handled. This also applies to empty tables or template tables after the first execution. The following options exist:</li>
+                        <li>Truncate: Delete all existing records and fill the records into the empty table.</li>
+                        <li>Insert: Add new rows in addition to existing ones. For this option, define a sequence as key generator that finds the next unused integer as a row number.</li>
+                        <li>Update: Overwrite existing records with additional or more current information. This option requires that you define a sequence and use a table with a primary key or define the key fields of the template target.</li>
+                        <li>Upsert: Insert the new or update the changed records. This option requires that you define a sequence and you use a table with a primary key or define the key fields of the template target.</li>
+                    </ul>
+                </li>
+                <li>Splitting Data Sets
+                    <ul>
+                        <li>You can implement different storage strategies, such as load to in-memory storage for recent records, and load to disk storage for older records.</li>
+                        <li>You can store data at different levels of aggregation. For example, you could aggregate older data and load this to a table and leave the newer data at the line level and store this in a separate table.</li>
+                        <li>Different transformation logic may be required. For example, a bonus calculation that depends on the job role, such as senior manager or sales executive.</li>
+                        <li>The <i>Case</i> node receives data from a single inbound port and distributes the rows unchanged to multiple outbound ports.</li>
+                        <li>For every outbound port, a Boolean expression is defined to determine which inbound rows will be transferred to it.</li>
+                        <li>One outbound port is marked as &quot;Default&quot; to receive all the inbound rows that haven&#39;t been dispatched to any of the other ports.</li>
+                    </ul>
+                </li>
+                <li><b>History Preservation</b></li>
+                <li>Allows for maintaining older versions of rows when a change occurs by generating new rows in a target.</li>
+                <li>When a record changes in a source system, you usually want to update the data target with the change. You can choose to overwrite the existing record with the newer version, but you could also decide to keep the existing record, mark it as &#39;old&#39;, and load the new record alongside. This way you keep the old records as well as provide the new record to the business.  </li>
+                <li>Lookup
+                    <ul>
+                        <li>is almost a join. You define matching criteria and add the corresponding values from another column</li>
+                        <li>The lookup table should not change dynamically during data load of the main records. Therefore, the lookup transformation can be processed in real-time.</li>
+                        <li>You can specify lookup table column and sort value pairs to invoke a sort, which selects a single lookup table row when multiple rows are returned.</li>
+                        <li>You&#39;ve learned how to fetch an attribute such as a phone number and add it to a sales record with the corresponding person. But if this person has multiple phone numbers a join would create a copy of the transaction data record with this person for each phone number. Suppose, you need only the first phone number, a <i>Lookup</i> node is what you need  </li>
+                        <li>Configure default values in the form of constants to be output when no Lookup table rows are returned.</li>
+                        <li><img src="https://remnote-user-data.s3.amazonaws.com/BQUe_gZ1Y2Bq2TzhtMU_WcceXkBsHGQ0H0rzuLFhJaDFD8qo9veQkVUIJgt7wVnIjFMQ-KdpPAmUs0S12YqRVYqShPEnvYn5QdS06UWAriShnddT1vPNPybRQFBtUrdr.png" width="378" height="199.7164948453608"/></li>
+                    </ul>
+                </li>
+                <li><b>Map Operation</b></li>
+                <li>Sorts input data and maps output data.</li>
+                <li>Pivot
+                    <ul>
+                        <li><img src="https://remnote-user-data.s3.amazonaws.com/7HtIEwlCdZ6n3yyNRKx0rfiAGY7O5KdCFPOgfGnvOM4nOhnAUiMz6MgoAx6RhlEDBbByGtkDwFcjNXXz7KQfoV7gMcYY-wvZ21w6Q_6tCZggSTwP1-gyHTYqdGyfjCPp.png" width="378" height="198.7422680412371"/></li>
+                        <li>Unpivot ⇒ Creates a new row for each value in a column identified as a pivot column.</li>
+                        <li><img src="https://remnote-user-data.s3.amazonaws.com/V5awLYPmkK9pUiZBZZOw5uUeu7-irmHIHcC8jt99HnGHrHMeLJ5U-amqkKwCBqAWBLlCYuC466AsiAvATAf3A0JFqw0ueTkBBV5XcSNuHIAa-vRtM3fRuShwarz0LUee.png" width="365.59125373344773" height="184.6801178653499"/></li>
+                        <li>In your flowgraph, add a <i>Pivot Node</i> and connect its predecessor to the new node.</li>
+                        <li>In the <i>Axis Attributes</i> section, select <i>Click to select axis</i>. Select the column that you want to pivot on, and then choose <i>OK</i>. A set of pivoted columns is generated for each axis value. Create an axis value for each unique value in the axis column. At runtime, a new column is created for each pivoted attribute and each unique axis value in the <i>Axis Attribute</i> section.</li>
+                        <li>Select <i>Add Values</i> to create one or more columns to hold the pivoted data. Type the column name in the <i>Value</i> column, and enter a prefix in the <i>Prefix</i> column. The new columns with their prefixes are displayed in the list of output columns after you specify the data in the columns. For example, if you distribute by month, you can generate prefixes <i>Jan</i> for the axis value (month) <i>1</i> and <i>Feb</i> for the axis value (month) <i>2</i>.</li>
+                        <li>Under <i>Data Columns</i>, choose the <i>+</i> icon for each data column whose values you want pivoted from rows into columns. For example, you can select <i>Costs</i> and <i>Revenue</i> columns that you wanted included. Notice that the <i>Output Columns</i> section generates <i>Jan_Costs</i>, <i>Jan_Revenue</i>,<i>Feb_Costs</i> , and <i>Feb_Revenue</i> as new columns. (The underscore is added automatically to separate the prefix name from the pivoted column name.)</li>
+                        <li>Under <i>Output Columns</i>, select <i>Pass Through</i> to select the columns that you want to output without pivoting, typically attributes, for example, Country. The pass through columns appear in the target table without modification.</li>
+                        <li>Set the <i>Duplicate Strategy</i> at the bottom to choose the behavior when a duplicate is encountered.
+                            <ul>
+                                <li>Select <i>Abort</i> when you want to cancel the transform process.</li>
+                                <li>Select <i>First Row</i> when you want to store the value in the first row.</li>
+                            </ul>
+                        </li>
+                    </ul>
+                </li>
+                <li>Table Comparison ⇒ Compares two tables and produces the difference between them as a dataset with rows flagged as INSERT, UPDATE, or DELETE.</li>
+                <li>Data Quality Management microservice Cleanse (DQMm Cleanse)
+                    <ul>
+                        <li>Record de-duplication, address cleansing, generating missing data, and enriching records with geographic information. </li>
+                        <li>For SAP HANA Cloud, the key data quality features are available via a subscription-based micorservice  </li>
+                        <li>SAP HANA on-premise provides several nodes that support data quality. These are:</li>
+                        <li>The node processes input data and compares it with reference data stored in country-specific address directories. The directories can be downloaded and deployed as part of SAP HANA Smart Data Integration or Smart data qualitiy installation for SAP HANA on-premise.</li>
+                        <li>Match - find and deal with records that might be duplicates</li>
+                        <li>Cleanse - tidy-up fields and generate additional information</li>
+                        <li>Geocode - generate geographic data for a record</li>
+                        <li>The Geocode node generates latitude and longitude coordinates for an address, and generates addresses from latitude and longitude coordinates.  </li>
+                        <li>The node interprets the input data and compares them with reference information coming from local geographical information directories.</li>
+                        <li><a isInlineLink="true" href="https://help.sap.com/docs/HANA_SMART_DATA_INTEGRATION/cc7ebd3f344a4cdda20966a7617f52d8/bc040a4563de413f89cb2017988b7a13.html">Modeling Guide for SAP HANA Smart Data Integration and SAP HANA Smart Data Quality</a> </li>
+                    </ul>
+                </li>
+                <li>Variable
+                    <ul>
+                        <li>When you create variables, you can use them in nodes that accept them such as the Projection node and Aggregation node.</li>
+                        <li>Choose the type of Variable ⇒ expression, as it is used in Filter expression</li>
+                        <li>&quot;Filter1_Input&quot;.&quot;COUNTRY&quot; = $$P_COUNTRY$$</li>
+                    </ul>
+                </li>
+                <li><i>Procedure</i> node
+                    <ul>
+                        <li>To implement a complex sequence of SQL statements with just one node</li>
+                        <li>To reuse an existing flowgraph</li>
+                        <li>The node allows you to call database procedures (that is, in SQLScript) within a flowgraph.</li>
+                        <li>The procedure node has an inbound or outbound port for every IN or OUT table parameter of the procedure</li>
+                        <li>If a procedure has scalar input parameters, the values for these parameters come from variables defined in the flowgraph. These variables are created automatically. When the flowgraph is executed, you provide a value for each variable so that it can be passed to the input scalar parameters.</li>
+                        <li>The procedure node is not available for real time processing.  </li>
+                    </ul>
+                </li>
+                <li>Projection node
+                    <ul>
+                        <li>Filter expression</li>
+                        <li>Remove fields (columns)</li>
+                        <li>Rename fields (columns)</li>
+                        <li>Add new fields (columns) using SQL expressions</li>
+                    </ul>
+                </li>
+                <li><b>Nested Flowgraphs</b> </li>
+                <li>If you have an existing basic flowgraph that should be called by one or more new top-level flowgraphs, you can deploy it as a procedure. Then, this procedure can be implemented in the new flowgraph.</li>
+                <li>How to debug a Flowgraph
+                    <ul>
+                        <li>Switch on the debug panel</li>
+                        <li>Select each relevant node and turn on preview option</li>
+                        <li>Deploy the flow graph</li>
+                        <li>Execute the flow graph and check the content of the interesting nodes</li>
+                    </ul>
+                </li>
+                <li>Scheduling a Flowgraph
+                    <ul>
+                        <li>Make sure that the flowgraph has been deployed as a procedure.</li>
+                        <li>In your project, create a source file with the extension .hdbschedulerjob, for example UPDATE_JOB.hdbschedulerjob.</li>
+                        <li>The file should include the SQL command CREATE SCHEDULER JOB, but write it without the leading CREATE. You may already know this concept from writing the CREATE TABLE SQL command without the leading CREATE in a table definition (.hdbtable) file.</li>
+                        <li>Depending on the flowgraph design, you need to provide various parameters in the .hdbschedulerjob file. For example, suppose you have created and deployed a flowgraph and its corresponding procedure with the name People_Fullname2 with a parameter P_COUNTRY. Its parameter value should be &#39;USA&#39;. The job should run on Monday through Friday at 1:00 am during all of 2024 and 2025.</li>
+                        <li>SCHEDULER JOB UPDATE_JOB 
+CRON &#39;2024,2025 * * mon,tue,wed,thu,fri 1 00 00&#39; 
+ENABLE PROCEDURE &quot;People_fullname2&quot; 
+PARAMETERS P_COUNTRY = &#39;USA&#39;</li>
+                        <li>After CRON, a cron expression (a string of format &#39;&lt;years&gt; &lt;months&gt; &lt;dates&gt; &lt;weekdays&gt; &lt;hours&gt; &lt;minutes&gt; &lt;seconds&gt;&#39;) is expected. This expression defines the recurrence.</li>
+                        <li>To delete the job, delete the file and redeploy the src folder.</li>
+                    </ul>
+                </li>
+                <li>Real-Time Processing
+                    <ul>
+                        <li>Real-time means that records are immediately processed row by row. With batch processing, the data is selected in packages</li>
+                        <li><b>Valid for real-time</b> </li>
+                        <li>Aggregation</li>
+                        <li>Case</li>
+                        <li>Cleanse</li>
+                        <li>Data Mask</li>
+                        <li>Geocode</li>
+                        <li>History Preserving</li>
+                        <li>Lookup</li>
+                        <li>Map Operation</li>
+                        <li>Table Comparison</li>
+                        <li>Union</li>
+                        <li><b>Not valid for real-time</b> </li>
+                        <li>Date Generation</li>
+                        <li>Join</li>
+                        <li>Match</li>
+                        <li>Pivot</li>
+                        <li>Procedure</li>
+                        <li>Projection</li>
+                        <li>Row Generation</li>
+                        <li>Unpivot</li>
+                        <li><b>References</b> </li>
+                        <li>SAP note 2495696 – How to schedule execution of flowgraphs or replication tasks - SAP HANA Smart Data Integration</li>
+                        <li><a isInlineLink="true" href="https://help.sap.com/viewer/d60a5abb34d246cdb4ab7a4f6b9e3c93/latest/en-US/701be86d4ad3470485ee4ecb25258ba2.html">How to schedule an SDI design time object monitor</a> </li>
+                        <li><a isInlineLink="true" href="https://help.sap.com/docs/hana-cloud-database/sap-hana-cloud-sap-hana-database-deployment-infrastructure-hdi-reference/scheduler-jobs-hdbschedulerjob">How to Schedule a .hdbjobschedulerjob</a> </li>
+                        <li><a isInlineLink="true" href="https://help.sap.com/docs/HANA_SMART_DATA_INTEGRATION/cc7ebd3f344a4cdda20966a7617f52d8/1eb8869e70ef4ceb847063da3762ef21.html">Possibility of Real-Time Processing</a> </li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+        <li>Replication in SAP Hana Cloud Database
+            <ul>
+                <li>To replicate data from various data sources in SAP Hana Cloud, it’s necessary to set up access to that table. This is done by creating a remote source and a virtual table, as described in the previous unit.</li>
+                <li>In addition, you need to create the target table to store the replicated data. The target table can either have the same structure as the source table, be a subset of the source table with fewer columns, or have variations in the column definitions, for example, to reduce long strings where not all characters are needed.</li>
+                <li>Once you&#39;ve created the virtual table and the target table, you can then define the remote subscription . The target table is then subscribing to the changes made to the data accessed by the virtual table.</li>
+                <li><b>Log-based table replication</b> </li>
+                <li>Uses the database redo log to fetch changes on the source table and reproduce them. It&#39;s non-intrusive, and transactional integrity is assured because only committed transactions are replicated.</li>
+                <li><b>Trigger-based table replication</b> </li>
+                <li>Triggers are created in the source database to monitor the source table and capture all modified (updated or deleted) and new rows. The captured data is stored in a shadow table. A queue table is also created to record all modifications in the correct sequence. This technology is independent of the source database version and may offer more functions than log-based replication, such as replication of Large Objects (LOBs).</li>
+                <li><b>File replication</b> </li>
+                <li>This is the technology implemented by the FileAdapter and is used to replicate new rows in a file. Only append is supported.</li>
+                <li>Duplicate Data is sitting on both on-premise and SAP Hana cloud</li>
+                <li>If you have time sensitive queries then you can use replication scenario because virtualization layer will take some time</li>
+                <li>Create schema reptest;
+
+CREATE COLUMN TABLE &quot;REPTEST&quot;.&quot;R_OUTLET&quot; LIKE &quot;Virtual&quot;.&quot;V_OUTLET&quot; TARGET TABLE &quot;REPTEST&quot;.&quot;R_OUTLET&quot;;
+
+//Virtual is case sensitive
+ 
+CREATE REMOTE SUBSCRIPTION replicate ON &quot;Virtual&quot;.&quot;V_OUTLET&quot; TARGET TABLE &quot;REPTEST&quot;.&quot;R_OUTLET&quot;
+
+//to activate replication
+ALTER REMOTE SUBSCRIPTION replicate DISTRIBUTE 
+
+//to Deactivate replication
+ ALTER REMOTE SUBSCRIPTION replicate RESET</li>
+                <li><a isRemReference="true" href="../SAP%20HANA/SQLSCRIPT/SYNTAX.html?isPin=false">SYNTAX</a></li>
+                <li><a isRemReference="true" href="Data%20Provisioning/Remote%20Subscriptions.html?isPin=false">Remote Subscriptions</a> - Verify the replication activation</li>
+                <li>Authorizations
+                    <ul>
+                        <li>For the user specified in the remote source definition, the user must have CREATE ANY privilege on the source schema.</li>
+                        <li>For the user implementing the replication in the target SAP HANA database, CREATE VIRTUAL TABLE and CREATE REMOTE SUBSCRIPTION on the remote source, CREATE TABLE on the target schema.</li>
+                    </ul>
+                </li>
+                <li>Implementation Steps
+                    <ul>
+                        <li>Create a remote source.</li>
+                        <li>Create a virtual table based on the remote source.</li>
+                        <li>Create the target table</li>
+                        <li>CREATE COLUMN TABLE &quot;REPTEST&quot;.&quot;R_OUTLET&quot; LIKE &quot;Virtual&quot;.&quot;V_OUTLET&quot; TARGET TABLE &quot;REPTEST&quot;.&quot;R_OUTLET&quot;;</li>
+                        <li>Define the remote subscription using the virtual table as the provider and the target table as the receiver.</li>
+                        <li>CREATE REMOTE SUBSCRIPTION &lt;subscription_name&gt; 
+ON &lt;virtual_table_name&gt; 
+TARGET &lt;target_table_name&gt;;</li>
+                        <li>Queue the remote subscription, which involves creating source triggers, shadow tables, and queue tables for trigger-based replication (only applicable to SDI remote sources) ⇒ You will see many tables starting with HADP_SHADOW_OP_SOURCE* in the <b>Source SAP Hana On Premise System</b> </li>
+                        <li>ALTER REMOTE SUBSCRIPTION &lt;subscription_name&gt; QUEUE;</li>
+                        <li>If using SDI remote sources, copy the initial source data into the target.</li>
+                        <li>‌INSERT INTO &lt;target_table_name&gt; 
+(SELECT * FROM &lt;virtual_table_name&gt;);</li>
+                        <li>Distribute the data, initiating real-time change data capture.</li>
+                        <li>ALTER REMOTE SUBSCRIPTION &lt;subscription_name&gt; DISTRIBUTE;</li>
+                    </ul>
+                </li>
+                <li>Replication Tasks
+                    <ul>
+                        <li>To manage replications, you create a .hdbreptask file to define the metadata of the replication. The metadata describes the:</li>
+                        <li>Remote source</li>
+                        <li>Name of the Remote Source object used to access the source data.</li>
+                        <li>Remote source object</li>
+                        <li>Name of the table, view, or file you want to access.</li>
+                        <li>Target table</li>
+                        <li>Name of the table where the replicated data will be stored</li>
+                        <li>Replication behavior
+                            <ul>
+                                <li>You could choose to replicate all data only once. This is usually referred to as an initial load. This is useful if you wanted a snapshot of your data. You could also choose real-time replication without initial load if you only need future data. Then, you could also want to replicate changes in the structure of the table.</li>
+                                <li><i><b>No data transfer</b></i><b> </b> </li>
+                                <li>If you just want a copy of the source data structure, but without the source data. This is equivalent to a CREATE TABLE &lt;...(new table)&gt; like &lt;...(existing table)&gt;statement.</li>
+                                <li><i><b>Initial load only</b></i><b> </b> </li>
+                                <li>If you just want a copy of the current data but no replication of future data. This is called a snapshot.</li>
+                                <li><i><b>Initial + real-time</b></i><b> </b> </li>
+                                <li>Most probably, you want current data and future changes.</li>
+                                <li><i><b>Initial + real-time with structure</b></i><b> </b> </li>
+                                <li>The same as the previous option, but it will also replicate the changes in the source table structure. Only works for tables.</li>
+                                <li><i><b>Real time</b></i><b> </b> </li>
+                                <li>You could only need future data but no current data.</li>
+                                <li><i><b>Real-time only with structure</b></i><b> </b> </li>
+                                <li>Same as the previous option but with replication of the table structure.</li>
+                            </ul>
+                        </li>
+                        <li>Once built/deployed, the replication task generates the different objects needed in the SAP HANA database. These include:</li>
+                        <li>A virtual table</li>
+                        <li>A target table</li>
+                        <li>A start procedure (.START_REPLICATION) to set up the replication</li>
+                        <li>A second procedure (.RS_SP) to execute individual subscription commands</li>
+                        <li>You need to call the main start procedure to create the remote subscription, triggers, and so on. The Replication Task only executes an initial load.</li>
+                        <li>The second procedure can be called for maintenance or to execute single commands such as Reset, Drop, or any other subscription steps.</li>
+                        <li>If your target is an on-premise database, you can create the User-Provided Service in XSA Cockpit:</li>
+                        <li><img src="https://remnote-user-data.s3.amazonaws.com/jXewDdIzMmwBUM4tu9NJ5HdjpzRPezW3jQmdZ78aG2ydtW4AgEeAocwFDi5rppL36y8odwngkIWB3WNV5Wrh8WK1O4ixjMM6MLrm0JoJaJUXxdfl54kQMwu4XszOJcZm.png" width="425" height="162.183908045977"/></li>
+                        <li>Be careful to add the &quot;hana&quot; tag </li>
+                        <li>The .hdbgrants file must include the required authorizations for both object owner and application user as shown in the following example:</li>
+                        <li>{
+  &quot;ServiceName_1&quot;:{
+    &quot;object_owner&quot;:{
+      &quot;global_object_privileges&quot; : [
+        {
+          &quot;name&quot; : &quot;OP_RS_OP_SDI&quot;,
+          &quot;type&quot; : &quot;REMOTE SOURCE&quot;,
+          &quot;privileges&quot; : [ &quot;CREATE VIRTUAL TABLE&quot;, &quot;CREATE REMOTE SUBSCRIPTION&quot; ],
+          &quot;privileges_with_grant_option&quot; : [ &quot;CREATE VIRTUAL PROCEDURE&quot; ]
+        }
+      ]
+    },
+    &quot;application_user&quot;:{
+      &quot;global_object_privileges&quot; : [
+        {
+          &quot;name&quot; : &quot;OP_RS_OP_SDI&quot;,
+          &quot;type&quot; : &quot;REMOTE SOURCE&quot;,
+          &quot;privileges&quot; : [ &quot;CREATE VIRTUAL TABLE&quot;, &quot;PROCESS REMOTE SUBSCRIPTION EXCEPTION&quot; ],
+          &quot;privileges_with_grant_option&quot; : [ &quot;CREATE VIRTUAL PROCEDURE&quot; ]
+        }
+      ]
+    }
+  }
+}</li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+        <li>Connect to third-party databases
+            <ul>
+                <li>Data Provisioning Server (DP Server)
+                    <ul>
+                        <li>This is a built-in service or component within <b>SAP HANA</b>.</li>
+                        <li>It works closely with the Data Provisioning Agent to handle data flows.</li>
+                        <li>The Data Provisioning Server is often part of the “Smart Data Integration” or “Data Provisioning” component in HANA.</li>
+                        <li>If you didn’t install it initially, you can run the HANA installer (or HANA lifecycle manager) again and select the relevant SDI/DP server component.</li>
+                        <li>In <b>HANA Studio</b> or <b>HANA Cockpit</b>, check if the DP<b> server</b> service or plugin is running.</li>
+                        <li>You can also check your installed plugins under <b>HANA Administration ⇒ Overview</b> ⇒ <b>Services/Plugins</b>.</li>
+                        <li><img src="https://remnote-user-data.s3.amazonaws.com/oXaHtDjc6Dg1Ht8jOeGISx3Fct1NrgxLItDkPnw0JIyZWoa6XeehzGeCQeXmtPhYY97OCSQl7VhFtz8-1W29g1JXq--dyyTBEyTNbLc1scIEBLMnZTL1FHadi-0JPjR7.png" width="425" height="209.08045977011494"/></li>
+                    </ul>
+                </li>
+                <li>Data Provisioning Agent (DP Agent)
+                    <ul>
+                        <li>This is a separate piece of software you install <b>outside</b> of HANA, usually on a server that can connect to your source systems (e.g., Oracle, SQL Server).</li>
+                        <li>It hosts various <b>adapters</b> (Java or C++) that know how to speak to different databases.</li>
+                        <li><b>Download the DP Agent software</b> from the SAP Software Downloads site (matching your HANA version).</li>
+                        <li><b>Install the DP Agent</b> on a server that can connect to the Oracle database.</li>
+                        <li><b>Configure the Agent</b> using the included <b>Data Provisioning Agent Configuration Tool</b>:</li>
+                        <li>You’ll <b>register</b> the Agent with your HANA system (provide HANA hostname, ports, credentials).</li>
+                        <li>SAP Hana Cloud  ⇒ You may need Cloud Connector</li>
+                    </ul>
+                </li>
+                <li>Adapters
+                    <ul>
+                        <li>These are like “translators” that understand how to talk to each specific database (Oracle, MS SQL, etc.).</li>
+                        <li>The <b>Oracle adapter</b> is typically a Java adapter that you configure in the DP Agent to connect to Oracle databases.</li>
+                        <li>Install or enable the <b>Oracle adapter</b> (this might be the <q>com.sap.hana.dp.adapter.oracle</q> adapter or a similar name depending on your version).</li>
+                        <li>Provide any necessary Oracle JDBC drivers if prompted (e.g., <q>ojdbc8.jar</q>).</li>
+                    </ul>
+                </li>
+                <li>Create and Test the Remote Source in HANA
+                    <ul>
+                        <li>1. In <b>HANA Studio</b> or <b>Web IDE</b>, go to <b>Provisioning</b>→<b>Remote Sources</b>.</li>
+                        <li>2. Click <b>New Remote Source</b> and select the <b>Oracle adapter</b> (the one registered via the DP Agent).</li>
+                        <li>3. Provide <b>connection details</b> (hostname, port, username, password) for the Oracle database.</li>
+                        <li>4. <b>Test Connection</b> to ensure everything is set up correctly.</li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+        <li>Create an ABAP Cloud Remote Source
+            <ul>
+                <li>Import Certificates for SSL Connections to Remote Sources
+                    <ul>
+                        <li>Connections to an SAP HANA database in SAP HANA Cloud, to an SAP HANA Cloud, data lake Relational Engine, or to an ABAP system require an SSL certificate</li>
+                        <li>Download the DigiCert SSL certificates:</li>
+                        <li>//DigiCert Global Root CA:
+curl -O <a isInlineLink="true" href="https://dl.cacerts.digicert.com/DigiCertGlobalRootCA.crt.pem">https://dl.cacerts.digicert.com/DigiCertGlobalRootCA.crt.pem</a>
+
+//DigiCert Global Root G2:
+curl -O <a isInlineLink="true" href="https://dl.cacerts.digicert.com/DigiCertGlobalRootG2.crt.pem">https://dl.cacerts.digicert.com/DigiCertGlobalRootG2.crt.pem</a>
+
+DigiCert TLS RSA4096 Root G5: 
+curl -O https://cacerts.digicert.com/DigiCertTLSRSA4096RootG5.crt.pem </li>
+                        <li>Create a certificate collection</li>
+                        <li>CREATE PSE &lt;pse_name&gt;;
+
+CREATE PSE YU1_080_KEY_COLL; </li>
+                        <li>Create a certificate and insert the content of the downloaded certificate.</li>
+                        <li>If you require more than one SSL certificate, create a separate certificate for each one.</li>
+                        <li>CREATE CERTIFICATE &lt;certificate_name&gt; FROM &#39;
+-----BEGIN CERTIFICATE-----
+&lt;content in certificate&gt; 
+-----END CERTIFICATE-----&#39;;
+
+CREATE CERTIFICATE DigiCertTLSRSA4096RootG5  FROM &#39;
+-----BEGIN CERTIFICATE-----
+&lt;content in certificate&gt; 
+-----END CERTIFICATE-----&#39;;
+
+CREATE CERTIFICATE DigiCertGlobalRootG2 FROM &#39;
+-----BEGIN CERTIFICATE-----
+&lt;content in certificate&gt; 
+-----END CERTIFICATE-----&#39;;
+
+CREATE CERTIFICATE DigiCertGlobalRootCA FROM &#39;
+-----BEGIN CERTIFICATE-----
+&lt;content in certificate&gt; 
+-----END CERTIFICATE-----&#39;; </li>
+                        <li>Add the certificate(s) created above to the certificate collection:</li>
+                        <li>ALTER PSE &lt;pse_name&gt; ADD CERTIFICATE &lt;certificate_name&gt;;
+
+ALTER PSE YU1_080_KEY_COLL ADD CERTIFICATE DigiCertTLSRSA4096RootG5;
+
+ALTER PSE YU1_080_KEY_COLL ADD CERTIFICATE DigiCertGlobalRootG2;
+
+ALTER PSE YU1_080_KEY_COLL ADD CERTIFICATE DigiCertGlobalRootCA;</li>
+                        <li>Set the purpose of the newly created PSE to REMOTE SOURCE:</li>
+                        <li>SET PSE &lt;pse_name&gt; PURPOSE REMOTE SOURCE;
+
+SET PSE YU1_080_KEY_COLL PURPOSE REMOTE SOURCE FOR REMOTE SOURCE YU1_080; </li>
+                        <li>This makes the usage of the certificates in the PSE store available to all remote sources.</li>
+                    </ul>
+                </li>
+                <li>You have the CREATE REMOTE SOURCE system privilege ⇒ Use the DBADMIN credentials</li>
+                <li><img src="https://remnote-user-data.s3.amazonaws.com/-MkhMU7T9Z6wMf4yEEeqaQ-5e5i3ggV452YJkp5mvkchYjPVARQdPOOc1DOG2NDMFZPJDd7SKhijyastZkx4OaPzPWmzC-CYJJEY-7gBh9NCrUXI4nasfbfYybeBOYyk.png" width="951" height="630.3714880332986"/></li>
+                <li>An ABAP cloud remote source lets you access ABAP CDS view entities and parameterized ABAP CDS view entities in the remote ABAP system. It can be used with virtual tables or the linked database feature.</li>
+                <li>Only the <a isRemReference="true" href="Data%20Provisioning/Create%20an%20ABAP%20Cloud%20Remote%20Source/SAP%20Technical%20User.html?isPin=false">SAP Technical User</a> credential type is supported.</li>
+                <li>CREATE VIRTUAL TABLE with WITH REMOTE Option: The WITH REMOTE option in the CREATE VIRTUAL TABLE statement allows for creating virtual tables that can perform write operations on the remote source. However, since ABAP remote sources are read-only, using this option isn&#39;t supported.</li>
+                <li><b>Join Relocation:</b> Join relocation refers to processing joins directly on the remote source to optimize performance. Since ABAP remote sources are read-only, SAP HANA cannot push down join operations to the ABAP system. Instead, it retrieves the necessary data and performs the join operation within SAP HANA.</li>
+                <li><i>Example:</i> Suppose you have two tables: <q>Customers</q> in SAP HANA and <q>Orders</q> in the ABAP system. If you want to join these tables to find out which customers placed which orders, SAP HANA will fetch the relevant data from <q>Orders</q> and then perform the join with <q>Customers</q> locally.</li>
+                <li>Exposing Virtual Tables and Using CDS Associations: You can expose virtual tables as part of your service definitions in SAP CAP. By doing so, you can create OData services that allow read access to data from these virtual tables. Associations can be defined to enable navigation properties in the OData service.</li>
+                <li>Example: In your CAP project, you might have a service that exposes both Customers and Orders, with an association between them. This setup allows consumers of your OData service to retrieve a customer and navigate to their orders seamlessly.</li>
+                <li>By default, the ODBC driver for ABAP runs on the indexserver</li>
+                <li>For troubleshooting purposes, traces for the ODBC driver for ABAP can be configured and managed within the SAP HANA trace framework.</li>
+                <li>SQL based</li>
+                <li>Data Federation (live data) with virtual tables</li>
+                <li>Can only use CDS view entities</li>
+                <li>SAP Technical User
+                    <ul>
+                        <li>Search for and open the Maintain Communication Users app in SAP S/4HANA.</li>
+                        <li>Click on New.</li>
+                        <li>Enter the Username, Description, and Password for the new user.</li>
+                        <li>Click on Create.</li>
+                    </ul>
+                </li>
+                <li>Create a service binding of type SQL 
+                    <ul>
+                        <li>Mandatory to define SQL Schema</li>
+                        <li><img src="https://remnote-user-data.s3.amazonaws.com/oSiUpvWNR6cBaWtPEbDjp3IZeGcnuA4p85TVuSyOIs-AVw0TuG5uKbJo3YwPWVnX1FB5YGzNsKN7KiHAdmCHGsZJz4qf1VV-Pxt4X7A6SVQY8tiIJSqd7KuDURxv-IfL.png" width="927" height="338.35005336179296"/></li>
+                    </ul>
+                </li>
+                <li>Create a new Communication Scenario for CDS views
+                    <ul>
+                        <li>SAP_COM_0531 
+                            <ul>
+                                <li>SAP Datasphere - ABAP CDS Extraction - OData Integration  </li>
+                                <li>Save the Cloud Data Integration Service URL/Service Interface, which looks like this example below:</li>
+                                <li>&lt;Host&lt;Service Path&gt; where in ‘Service path’ is /sap/opu/odata4/sap/cdi/default/sap/cdi/0001/</li>
+                                <li>Host: my402042-api.s4hana.cloud.sap</li>
+                                <li>Service path: /sap/opu/odata4/sap/cdi/default/sap/cdi/0001/?sap-client=080</li>
+                                <li><img src="https://remnote-user-data.s3.amazonaws.com/PPJdbz3FpiyqmMrXkiTAphNhODYVtWNYbQamApcKU3aVN5SEyzOD1ni9p6YiOEIhLk6CtApMwKz4nR9tVKGgozSPh2Ngt0BL4wQ-WuSLhHjUp6rumShsBq4NdYFwc7VW.png" width="284" height="132.34013605442178"/></li>
+                            </ul>
+                        </li>
+                        <li>S_PRIVILEGED_SQL1
+                            <ul>
+                                <li>In eclipse Right-click your package and choose New &gt; Other ABAP Repository Object &gt; Communication Scenario</li>
+                                <li>Name:Z_COM_SCENARIO_SQL_####</li>
+                                <li>Description: Communication Scenario for SQL test</li>
+                                <li>Select a transport request and click Finish.</li>
+                                <li>your communication scenario will be opened. go to the Inbound tab.</li>
+                                <li>Since you want to use user/password authentication in your Windows Excel test case, select Basic as Supported Authentication Methods.</li>
+                                <li>In section Inbound Services, choose the Add… button and enter S_PRIVILEGED_SQL1 as Inbound Service ID and click Finish.</li>
+                                <li>The S_PRIVILEGED_SQL1 inbound service is a pre-configured service for the privileged access to CDS view entities, that is, no DCL is applied. (DCL stands for Data Control Language. It provides an access control mechanism to restrict the results returned by the CDS view from the database according to conditions)</li>
+                                <li><img src="https://remnote-user-data.s3.amazonaws.com/vxqzFoTYUrXTLfqGkYrvM-EwlkJnDcPhFf8N3FWFqLOIHAumIiZ83XAny4-D5F-5BSqClWAoi1d3w5vVTkNn9HYxqqJnU_L5gm3oCMlnMH18ElBYsBZYOFhTG2OthT3Z.png" width="331" height="264.9941348973607"/></li>
+                                <li>Now you need to add additional authorizations to enable access to your service binding. Go to the tab <b>Authorizations</b>. Below <b>Authorization Objects</b>, press the <b>Insert</b> button.</li>
+                                <li>Enter S_SQL_VIEW in Authorization Object field and click OK.</li>
+                                <li><img src="https://remnote-user-data.s3.amazonaws.com/SZvSFjCQIurCQC28wLB6__jQ295tSXNa0kri0lQwDPQ4sy2lBAXW0UEYIDziEc6OOeMHkeY-Zt87f0Px4W2BbsJDIO_U4fenCHX3MPSXY32COF0nV5EaTmAGD5G7tNla.png" width="331" height="156.27859237536657"/></li>
+                                <li>Select the added authorization object and fill out the authorizations in the details:
+                                    <ul>
+                                        <li><q>SQL_SCHEMA</q>: Your schema name</li>
+                                        <li><q>SQL_VIEW</q>: <q>*</q></li>
+                                        <li><q>SQL_VIEWOP</q>: <q>SELECT</q></li>
+                                    </ul>
+                                </li>
+                                <li><q>SQL_SCHEMA</q> must contain the name of the service binding that you want to grant access to.</li>
+                                <li>The value * for <q>SQL_VIEW</q> means that you allow access to all views in the service definition that is attached to the service binding ZORDERS.</li>
+                                <li>Since currently only read only access is allowed, <q>SQL_VIEWOP=SELECT</q> is mandatory.</li>
+                                <li>Save your entries and press the <b>Publish Locally</b> button to publish it in the current development system.  </li>
+                            </ul>
+                        </li>
+                    </ul>
+                </li>
+                <li>Create a Communication System in SAP S/4HANA
+                    <ul>
+                        <li>Search for and open the Communication System app in SAP S/4HANA.</li>
+                        <li>Click on New.</li>
+                        <li>Enter the System ID, System Name, Host Name (can be same as System ID) and add Inbound and Outbound Users. The authentication method for Inbound/Outbound is Username and Password.</li>
+                        <li>Click on Save.</li>
+                    </ul>
+                </li>
+                <li>Create a Communication Arrangement
+                    <ul>
+                        <li>Search for and open the Communication Arrangement app in SAP S/4HANA.</li>
+                        <li>Click on New.</li>
+                        <li>Select <a isRemReference="true" href="Data%20Provisioning/Create%20an%20ABAP%20Cloud%20Remote%20Source/Create%20a%20new%20Communication%20Scenario%20for%20CDS%20views/SAP_COM_0531.html?isPin=false">SAP_COM_0531 </a> as Communication Scenario</li>
+                        <li>Enter a name for your Arrangement Name. Then click on Create.</li>
+                        <li><img src="https://remnote-user-data.s3.amazonaws.com/bDUtGHSfKjm24gVW4NYiDREjwdObsGYSYPuAGckc0ZWHvhavrMVo7inusWYCyoP9KDeIUiRgqq9ch6Du6hh6x8oqbwsshqGrYN4NjtsT2CDbFnkBENjsbQ1B64XBkFBe.png" width="307" height="137.5205047318612"/></li>
+                        <li>Add your Communication System that you created the previous step.</li>
+                        <li>Add your Communication User that you created in the first step into the Username for the Inbound Communication section. Set the Authentication Method to User ID and Password.</li>
+                        <li>Select <b>Authorization Group ID</b>  ⇒ SAP_DI</li>
+                        <li>Click on Save.</li>
+                        <li>Click on New.</li>
+                        <li>Select <a isRemReference="true" href="Data%20Provisioning/Create%20an%20ABAP%20Cloud%20Remote%20Source/Create%20a%20new%20Communication%20Scenario%20for%20CDS%20views/S_PRIVILEGED_SQL1.html?isPin=false">S_PRIVILEGED_SQL1</a> as Communication Scenario</li>
+                        <li>Add your Communication System that you created the previous step.</li>
+                        <li>Click on Save.</li>
+                    </ul>
+                </li>
+                <li>Create a Remote Source Using SQL Syntax
+                    <ul>
+                        <li>CREATE REMOTE SOURCE &lt;remote_source_name&gt; ADAPTER &quot;abapodbc&quot;
+    CONFIGURATION &#39;uidtype=alias;driver=ODBC_driver_for_ABAP.so;servicepath=/sap/bc/sql/sql1/sap/s_privileged;
+    host=&lt;abap_host_name&gt;;port=&lt;abap_port_number&gt;;
+    language=EN;typemap=semantic&#39;
+    WITH CREDENTIAL TYPE &#39;PASSWORD&#39; USING &#39;user=&lt;username&gt;;password=&lt;password&gt;&#39;;</li>
+                        <li>servicepath  ⇒ Service path to the ABAP SQL service for privileged data access. This path is accessed with a technical user. Typically, the path name is the following: /sap/bc/sql/sql1/sap/s_privileged</li>
+                        <li>user  ⇒ ID or alias name of the ABAP user, depending on the value of the uidtype property</li>
+                        <li>uidtype (optional) ⇒ Either uid (default) or alias</li>
+                        <li>uid: The user name in the credential is the ABAP user ID.</li>
+                        <li>alias: The user name in the credential is the alias name of the ABAP user.</li>
+                        <li>port : Port number of the ABAP cloud system: 443</li>
+                        <li>Host address of the ABAP cloud system  </li>
+                        <li><img src="https://remnote-user-data.s3.amazonaws.com/0ZqEvr1XBc4Ivq9ahh2ZCWtL26IqGInNeDrw3F2TnI3siN3iWrPH-hpJBOTkEWgA-U1rMYUuX7F4gUS7PgsCKF5gCTnRpQimv5xcucxCrKMdvOaBa6x7njo4d9cqZFJH.png" width="931" height="827.115834218916"/></li>
+                    </ul>
+                </li>
+                <li>To verify that a remote source is correctly configured, execute the following command:</li>
+                <li>CALL CHECK_REMOTE_SOURCE(&#39;&lt;remote_source_name&gt;&#39;);</li>
+                <li>Business User
+                    <ul>
+                        <li>Data restrictions are applied</li>
+                        <li>Create an IAM app
+                            <ul>
+                                <li>Add SQL service to IAM app</li>
+                                <li><img src="https://remnote-user-data.s3.amazonaws.com/vBWRQ1IvRBfTRFCgpOX8x4Exu2rI-GkL6ErZ9rxv_bEkDh0uNaqYs3w2on3VC5z5QGqQRNi0S7jlu45FR3Cc0LCaBqevgRbPwwisZwPpwelggPN0upSHMhEZT6JT8dIL.png" width="225.85714721679688" height="75.3657218130438"/></li>
+                                <li>Add authorization object</li>
+                                <li>Set Restriction Fields</li>
+                            </ul>
+                        </li>
+                        <li>Add IAM app to the Business Catalog</li>
+                        <li>Publish Locally</li>
+                        <li>Maintain Business User
+                            <ul>
+                                <li>Assign the business role</li>
+                                <li><img src="https://remnote-user-data.s3.amazonaws.com/2MZggSkGLNiuzmOanb8JR6xzgjcRxt2FLN3XLOmXF_hbqsFZq_WhFFvgUlZbLdPPeeCjWDMxPHxTsyhvuCmynFCWn5ytu_J_Bo8WDDS-p3g7Zfb3CbLJ5bLcob5WQfd4.png" width="931" height="325.5037194473964"/></li>
+                                <li>Assign the business catalog to business role</li>
+                                <li><img src="https://remnote-user-data.s3.amazonaws.com/hoBTJF2qSjxjqEkHXU2CnfCRY15RqW-rSu4i8sCiJchL6kueRZE5AHIAD9nqtHtw3bSsUkqvNc3YNoE7xVX-ep_AUF6fA52K04pqjgMlDI4JpZ9QyBPzL251L6Nl7bZH.png" width="931" height="337.37619553666315"/></li>
+                                <li>Maintain Business Role ⇒ Click on Display Restrictions</li>
+                                <li><img src="https://remnote-user-data.s3.amazonaws.com/8TVx9CdlpitIRlGt8w1PUINEgafP0ymu6efIOMYleDjP8xqrFTgB1lAxbAFFRXGO3fvPEfVU3hdeANygm1Gv2qb1jnTUBMG8zdqCBar5ke6Yl7J0pPWXRxLcB-3dXADc.png" width="908" height="350.14379084967317"/></li>
+                            </ul>
+                        </li>
+                        <li><img src="https://remnote-user-data.s3.amazonaws.com/3CZGyGKaOzaYXePPqB1V1LcVIv2j6JMjHfZEmicepScrHY7C69GcG2Td7aHHhyWvkx2YCKDoeK-ORFKX2Lzcw8U0KFO_D8C8QwguCIxxGQqFO5ALnzAaxeEUObm6SrG9.png" width="711" height="809"/></li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+        <li></li>
+
+    </ul>
+    </body>
+</html>

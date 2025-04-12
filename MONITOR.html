@@ -1,0 +1,125 @@
+<html>
+  <head>
+    <style>
+      .Portal {
+        border-color: lightblue;
+        border-style: solid;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>
+      MONITOR
+    </h1>
+    <br/>
+    <ul>
+        <li>Database diagnostic files
+            <ul>
+                <li>We store all the logs and traces in this folder</li>
+                <li>In database explorer if you expand the database container, you can see a folder</li>
+            </ul>
+        </li>
+        <li>Audit
+            <ul>
+                <li>In SAP Hana Cloud allows monitoring and recording specific actions in the database</li>
+                <li>It doesn&#39;t directly enhance database security but helps identify security vulnerability and potential breaches, Health, detect unauthorized privilege grants attempts to bridge security and protect against data misuse</li>
+                <li>Audited actions include changes to user authorization, creation or deletion of database objects, system configuration changes and access to sensitive data</li>
+                <li>The audit trail stores audit entries when an audit policy is triggered by a specific action</li>
+                <li>Audit entries are written to an internal SAP Hana database table ensuring quick querying and analysis of audit information</li>
+                <li>Access to audit entries is limited to the public system view AUDIT_LOG and only users with the system privilege AUDIT_OPERATOR and AUDIT_ADMIN can perform select operation on this view</li>
+                <li>SAP Hana Cloud Central ⇒ Auditing tile ⇒ Create Audit policy</li>
+                <li>Select Audit Actions like CREATE TABLE</li>
+                <li>Select Users</li>
+                <li>Audit Level like info, error and warning</li>
+                <li>Retention period</li>
+                <li>Enable Policy</li>
+            </ul>
+        </li>
+        <li>Show Data linage
+            <ul>
+                <li>Visualization of <b>all data sources</b> (like tables and views) that are used to build a calculation view.  </li>
+                <li>Right click hdbcalculation view in BAS and select the ? option</li>
+                <li>It shows the complete flow of data into and within the calculation view, including the processing steps.  </li>
+                <li>Shows how changes to the source data could impact the calculation view.  </li>
+            </ul>
+        </li>
+        <li>Manage Users
+            <ul>
+                <li>SAP Hana Cloud Central ⇒ right click and select SAP Hana Cockpit ⇒ Add all the tiles from ⇒ click on user icon ⇒ Select Manage cards</li>
+                <li>Is different from the SAP BTP users</li>
+                <li>Only Users created in SAP Hana Cockpit or SQL console shows up here</li>
+            </ul>
+        </li>
+        <li>Manage Roles
+            <ul>
+                <li>SAP Hana Cloud Central ⇒ right click and select SAP Hana Cockpit ⇒ Add all the tiles from ⇒ click on user icon ⇒ Select Manage cards</li>
+                <li>Is different from the SAP BTP roles</li>
+                <li>Only Roles created in SAP Hana Cockpit or SQL console shows up here</li>
+            </ul>
+        </li>
+        <li>Column Lineage
+            <ul>
+                <li>when you want to see quickly where a calculated or restricted column originates from</li>
+                <li>It also helps you to avoid mixing up columns with the same name.</li>
+                <li><img src="https://remnote-user-data.s3.amazonaws.com/QuCs3Jbwau64BEYOJJMtX0182CWNMV5Ci6fdSZmp2YPL5lFWtHj0cUdVhAD6Z8UfgA6zoiMxIhSHSh0Z-lRiJxO2Z5ATOem8zECPHC5LmybpApxN76VlNQ9dlgG9CkGs.png" width="479" height="297.7832310838446"/></li>
+                <li><b>Where-Used</b> 
+                    <ul>
+                        <li>Input Parameters</li>
+                        <li>Calculated Columns</li>
+                        <li>Restricted Columns</li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+        <li>Debug Query mode
+            <ul>
+                <li>Button in Graphical calculation view editor</li>
+                <li>In each node you will get Debug Query tab to examine the runtime SQL of a node</li>
+                <li>You can execute at each node to display the interim results</li>
+                <li>One of the most useful things that you can discover when using Debug Query mode is to see how each node is pruned of columns and even complete data sources under various query conditions  </li>
+                <li>Remember that the Debug Query mode calls the active version of the calculation view. This means that if you have made changes to the calculation view but not yet rebuilt it, then you switch on Debug Query mode, the debug results will not reflect those latest changes.</li>
+                <li>Previewing the Output of Intermediate Nodes
+                    <ul>
+                        <li>To troubleshoot problems in view design, preview the data of an intermediate node rather than the whole calculation view.</li>
+                    </ul>
+                </li>
+                <li>Replacing a Data Source
+                    <ul>
+                        <li>For the top node, it&#39;s also possible to switch to a Star Join node.</li>
+                        <li>It&#39;s possible to convert a Projection node into an Aggregation node and the other way around without losing the reference to the data sources of the node.</li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+        <li>SAP HANA Performance Tools
+            <ul>
+                <li>To enable this view, when creating your SAP Business Application Studio development space, or later on, you must add the extension  to this space.</li>
+                <li>This is a set of views, tables, graphs that you can use to analyze any SQL Query. You can drill-down in a graph execution, analyze the timeline of query compilation and execution, visualize how many tables, and which tables, were used, and so on.</li>
+                <li>In addition to analysing the SQL generated by the calculation views (either the standard query or a modified query), it can be used wherever SQL is defined, for example in table functions.</li>
+                <li><img src="https://remnote-user-data.s3.amazonaws.com/Lr_LZkXjS1ArRbjMKTrZ6Kt8JgxQ1KG_hq69OEZxlaCIe70Gq63eU4JGblmJz6xIoVZbob4lebGSUyV0TVudE_uzcKQzO4IqYGqg2YzJaFyO0HNVDhjoapoyvrypjEEN.png" width="1117" height="574.8535936113576"/></li>
+                <li>You must first locate the plan file in the folder where you uploaded it.</li>
+                <li>Add the plan file to ?.</li>
+                <li>SYSTEM privileges:
+                    <ul>
+                        <li>TRACE_ADMIN</li>
+                        <li>INIFILE_ADMIN</li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+        <li>SQL Analyzer Plan File
+            <ul>
+                <li>If you have generated the SQL plan file from an SQL Console opened from the <i>SAP HANA Database Explorer</i> view of SAP Business Application Studio, the plan file opens immediately in the <i>HANA SQL Analyzer</i> view.  </li>
+                <li><img src="https://remnote-user-data.s3.amazonaws.com/rteirW6Lpw9uUcMJDk_z83YTZcvJXPSLbBcCyaYlxvg8UkIWWQ05yxD2QyFx-TcLtRmbofKluJD1xsQzZhErsrGUDaUO0WfK_me5wolFXN_FmQeP1DpQcJgIuhgFNP-z.png" width="1117" height="305.2670807453416"/></li>
+                <li>To get started, you generate a file that collects the run-time information of your SQL query. Use the menu option <i>Analyze ⇒ ?</i>. Choose a file name prefix for the plan file, and choose <i>Save</i>. The location is already set for you and you cannot change it at this stage.  </li>
+                <li>If you have generated the SQL plan file from another tool, such as the Data Preview of SAP Business Application Studio, or from the external SAP HANA Database Explorer (outside of SAP Business Application Studio), you need to download the SQL plan file to your computer. Choose Download, and this is then handled by your web browser. Choose a convenient location to store the SQL plan file.</li>
+                <li>You access these plan files from the External SAP HANA DB Explorer, within the HDI container, in the section <i>Catalog ⇒ Database Diagnostic Files</i> ⇒ <i>&lt;DB Instance ID&gt;</i> ⇒ <i>other</i>. They must be downloaded, and then uploaded to SAP Business Application Studio.  </li>
+                <li><img src="https://remnote-user-data.s3.amazonaws.com/pDzWh35ixccuJ9UCvwtE25A-yuwy4alZhixA_z0HGaXdYiWHgLBUnfBArS1uIq5kFJ0dAvNyN7d0_7-sxq8vHmExhAgTKJVxrC-qTd6EIb0x8hDKkauAu0ygsPXdB495.png" width="1117" height="622.4276841171251"/></li>
+                <li>The next stage is to upload the plan file to the <i>Explorer</i> view of SAP Business Application Studio. Upload the plan file to any project folder by using the context menu <i>Upload</i>.  </li>
+            </ul>
+        </li>
+        <li></li>
+
+    </ul>
+    </body>
+</html>
