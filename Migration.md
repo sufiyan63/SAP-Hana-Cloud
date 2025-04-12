@@ -1,0 +1,7 @@
+- 1. **SAP BTP Database Tools**
+    - HANA Cloud Export/Import
+        - Use `hdbsql` or SAP HANA Database Explorer to export tables to `.csv` or `.hdbtable` files and import them into the target subaccount.
+        - For large datasets, use **backup/restore** or **schema replication** in SAP HANA Cloud.
+- **Cloud Integration (CPI)**:
+    - Use HTTP/SOAP/OData adapters to call APIs in the source/target systems for data transfer.
+- 

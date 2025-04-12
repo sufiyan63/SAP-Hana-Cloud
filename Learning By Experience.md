@@ -1,0 +1,3 @@
+- Use static filter or dynamic filter at the bottom as possible in the graphical view of calculation view on that exact table Because join are costly so before join condition try to filter
+- Each Dimension table will have multiple items in fact table so the cardinality is 1..N
+- Unions are less expensive than joins

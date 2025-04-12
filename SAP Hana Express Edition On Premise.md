@@ -1,0 +1,23 @@
+- Installation
+    - When you download **SAP HANA Express Edition** from the **SAP Download Manager**, it is typically provided as a **preconfigured virtual machine image. ** 
+    - **.ova file** (for VirtualBox or VMware) – This is an "Open Virtual Appliance" format that contains the entire virtual machine setup, including the operating system, SAP HANA software, and preconfigured settings
+    - PDF document for configuring in VMware. passwords, steps
+    - [VMware Workstation or VMware Player: ]()
+    - [Oracle VirtualBox: ]()
+    -  **Why can't you directly run it without VirtualBox or VMware?** 
+    - The **.ova file** is designed to run inside a virtualized environment that mimics the hardware and software configuration required by SAP HANA. It already includes a Linux-based OS (SLES or RHEL) and all necessary dependencies.
+    - Without a hypervisor like **VMware** or **VirtualBox**, you would have to manually install and configure SAP HANA on a bare-metal server running a compatible OS, which is complex and time-consuming.
+    - [Host mapping]()
+- Check status of Apps
+    - login with admin u: xs-admin-login
+    - password is same as the one you used while creating the database
+    - xs apps | grep webide
+    - You should see STARTED and 1/1 which mean 1 out of 1 instance is used
+- Check status of HDB
+    - In the Virtual machine 
+    - Open CLI ⇒ HDB info
+- WEBIDE/DB Explorer
+    - open edge
+    - [Host mapping]()
+    - hxehost:39030 or 192.168.1.7:39030
+    - click webide u:XSA_ADMIN p:same which you created at the time of installation
